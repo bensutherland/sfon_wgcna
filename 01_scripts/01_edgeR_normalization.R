@@ -23,6 +23,7 @@ files <- list.files(path="02_input_data/", pattern="*htseq_counts.txt")
 my.counts <- readDGE(files, path="02_input_data/", header = F) # Note: is an arg. for DGEList genes to provide annot.
 str(my.counts)
 dim(my.counts) #total unique tags = 69440
+my.counts.bk <- my.counts # just in case
 
 # Clean up file names
 to.trim <- "_R1_trimmed.fastq.gz.bam_htseq_counts"
@@ -33,12 +34,25 @@ str(my.counts) # much cleaner now
 
 #### 2. Filter Data ####
 #keep <- rowSums(my.counts[1,1] > 10) >= 2
-# filter low expr tags
-keep <- rowSums(cpm(my.counts)>0.5) >= 2
-my.counts <- my.counts[keep,, keep.lib.sizes=FALSE] #keep.lib.sizes option is used to recom- pute the library sizes from the remaining tags
-dim(my.counts) #now only have 1256 genes! #note: use 50cpm then get 2632 genes
 
-# Normalization
+# Find an optimal cpm filt (edgeRuserguide suggests 5-10 reads mapping to transcript)
+min.reads.mapping.per.transcript <- 10
+cpm.filt <- min.reads.mapping.per.transcript / min(my.counts$samples$lib.size) * 1000000
+cpm.filt # min cpm filt
+
+# maybe should use min(my.counts$samples$lib.size) rather than mean?
+
+min.ind <- 5 # choose the minimum number of individuals that need to pass the threshold
+
+# identify tags passing filter
+keep <- rowSums(cpm(my.counts)>cpm.filt) >= min.ind # Find which transcripts pass the filter
+table(keep) # gives number passing, number failing
+
+# subset DGEList
+my.counts <- my.counts[keep, , keep.lib.sizes=FALSE] #keep.lib.sizes = T retains original lib sizes, otherwise recomputes w remaining tags
+dim(my.counts)
+
+#### 3. Normalization ####
 my.counts <- calcNormFactors(my.counts, method = c("TMM"))
 my.counts$samples #wow, note the norm factor on lib05!
 
