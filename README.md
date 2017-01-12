@@ -15,6 +15,10 @@ https://github.com/bensutherland/SE-reads_assemble-to-counts.git
 
 At the end of the above repo, read counts will be output from HT-seq, and ready to be normalized and analyzed using WGCNA.
 
+Note that currently the input file has five lines at the end that begin with '__' that are not genes, they are summary information, including 'no_feature', 'ambiguous', 'too_low_aQual', 'not_aligned' and 'alignment_not_unique'. I am not sure what needs to be done with this, as other analysis appears to remove that information.
 
-## 1. Normalization ##
-Normalization is performed using edgeR
+
+## 1. Filtering and normalization ##
+These steps are performed in edgeR.
+
+
