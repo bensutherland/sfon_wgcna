@@ -34,3 +34,5 @@ z-*
 *~
 .Rproj.user
 02_raw_data/*.txt
+*.pdf
+.Rhistory
