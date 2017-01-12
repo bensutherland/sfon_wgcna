@@ -11,20 +11,28 @@ require("edgeR")
 # browseVignettes("edgeR")
 # edgeRUsersGuide()
 
+# Set working directory
 setwd("~/Documents/bernatchez/01_Sfon_projects/04_Sfon_eQTL/sfon_wgcna")
-setwd("/Users/wayne/Documents/bernatchez/Sfon_projects/SfeQ/eQTL_analysis/edgeR-norm")
+# setwd("/Users/wayne/Documents/bernatchez/Sfon_projects/SfeQ/eQTL_analysis/edgeR-norm")
 
-# import count data from each sample file:
-files <- list.files(path="/Users/wayne/Documents/bernatchez/Sfon_projects/SfeQ/eQTL_analysis/edgeR-norm/01_input_data/", 
-                    pattern="*htseq_counts.txt.tab")
+#### 1. Import Data ####
+# Collect file names
+files <- list.files(path="02_input_data/", pattern="*htseq_counts.txt")
 
-my.counts <- readDGE(files, path="/Users/wayne/Documents/bernatchez/Sfon_projects/SfeQ/eQTL_analysis/edgeR-norm/01_input_data")
-  # note that there is an argument for DGEList 'genes' to provide annotation for tags/transcripts/genes
+# Import data
+my.counts <- readDGE(files, path="02_input_data/", header = F) # Note: is an arg. for DGEList genes to provide annot.
 str(my.counts)
 dim(my.counts) #total unique tags = 69440
 
-#keep <- rowSums(my.counts[1,1] > 10) >= 2
+# Clean up file names
+to.trim <- "_R1_trimmed.fastq.gz.bam_htseq_counts"
+rownames(my.counts[[1]]) <- gsub(x = rownames(my.counts[[1]]), pattern = to.trim, replacement = "")
+my.counts$samples$files <- gsub(x = my.counts$samples$files, pattern = to.trim, replacement = "")
+dimnames(my.counts$counts)[[2]] <- gsub(x = dimnames(my.counts$counts)[[2]], pattern = to.trim, replacement = "")
+str(my.counts) # much cleaner now
 
+#### 2. Filter Data ####
+#keep <- rowSums(my.counts[1,1] > 10) >= 2
 # filter low expr tags
 keep <- rowSums(cpm(my.counts)>0.5) >= 2
 my.counts <- my.counts[keep,, keep.lib.sizes=FALSE] #keep.lib.sizes option is used to recom- pute the library sizes from the remaining tags
