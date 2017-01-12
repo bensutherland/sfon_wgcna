@@ -27,3 +27,6 @@ Data is visualized using mds plot, dispersions estimated (coefficient of variati
 Data is output in a matrix of filtered and normalized genes (but all are still in linear, not log2).
 Output datafile can be found in `03_normalized_data/normalized_output_matrix.csv`
 
+Note: original analysis separately generated male and female output and filtering. I don't think this is necessary, as in the next steps, the data can be subset by sex and re-filtered for low expression. The only place that may be negatively impacted is by using the TMM normalization on the sexes together, as we can expect there to be expression differences between these groups. For now will leave as is.
+
+## 2. WGCNA module building in females ##

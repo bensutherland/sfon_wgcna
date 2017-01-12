@@ -2,8 +2,7 @@
 # This is the first step of the WGCNA repo, but the input data comes from:
 # https://github.com/bensutherland/SE-reads_assemble-to-counts.git
 
-# todo #
-# add sample interpretation file
+#rm(list=ls())
 
 # Install Packages
 source("http://bioconductor.org/biocLite.R")
@@ -19,6 +18,11 @@ setwd("~/Documents/bernatchez/01_Sfon_projects/04_Sfon_eQTL/sfon_wgcna")
 # setwd("/Users/wayne/Documents/bernatchez/Sfon_projects/SfeQ/eQTL_analysis/edgeR-norm")
 
 #### 1. Import Data ####
+# Import interpretation file
+interp <- as.data.frame(read.csv("00_archive/sfeq_interpretation_v1.csv"))
+head(interp)
+names(interp)
+
 # Collect file names
 files <- list.files(path="02_input_data/", pattern="*htseq_counts.txt")
 
@@ -34,6 +38,16 @@ rownames(my.counts[[1]]) <- gsub(x = rownames(my.counts[[1]]), pattern = to.trim
 my.counts$samples$files <- gsub(x = my.counts$samples$files, pattern = to.trim, replacement = "")
 dimnames(my.counts$counts)[[2]] <- gsub(x = dimnames(my.counts$counts)[[2]], pattern = to.trim, replacement = "")
 str(my.counts) # much cleaner now
+
+# also need to clean it up in the interpretation file (TO IMPROVE)
+test <- gsub(interp$file.name, pattern = to.trim, replacement = "")
+test <- gsub(test, pattern = "trim.", replacement = "")
+head(test)
+head(my.counts$samples$files) # looks to be similar format
+
+interp$file.name <- test
+names(interp)
+head(interp$file.name)
 
 #### 2. Filter Data ####
 #keep <- rowSums(my.counts[1,1] > 10) >= 2
@@ -78,6 +92,25 @@ my.counts$counts[1:5, 1:5] # not normalized, raw counts
 normalized.output[1:5, 1:5] # normalized lib size calculated cpm values
 
 # Visualize data
+#plot using sample IDs
 plotMDS(x = my.counts, cex= 0.8) # note that this is supposed to be run on whatever you wrote calcNormFact() to
+#plot using sex
+plotMDS(x = my.counts, cex= 0.8
+        , labels = interp$sex[match(my.counts$samples$files, interp$file.name)])
+#plot using maturity and sex
+plotMDS(x = my.counts, cex= 0.8
+        , labels = paste(
+          interp$sex[match(my.counts$samples$files, interp$file.name)]
+            , interp$poids.sachet.foie[match(my.counts$samples$files, interp$file.name)]
+          , sep = ""))
 
+# note, this is how matching works:
+interp$sex[match(my.counts$samples$files, interp$file.name)] # matches order 
+interp$sex #see not the same
+
+# output as normalized linear
 write.csv(normalized.output, file = "03_normalized_data/normalized_output_matrix.csv")
+
+# # output as normalized log2 (in progress)
+normalized.output.log2 <- cpm(my.counts, normalized.lib.sizes = TRUE, log= T, prior.count = 1)
+write.csv(normalized.output, file = "03_normalized_data/normalized_output_matrix_log2.csv")
