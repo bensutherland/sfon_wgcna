@@ -2,6 +2,9 @@
 # This is the first step of the WGCNA repo, but the input data comes from:
 # https://github.com/bensutherland/SE-reads_assemble-to-counts.git
 
+# todo #
+# add sample interpretation file
+
 # Install Packages
 source("http://bioconductor.org/biocLite.R")
 biocLite("edgeR")
@@ -52,23 +55,29 @@ table(keep) # gives number passing, number failing
 my.counts <- my.counts[keep, , keep.lib.sizes=FALSE] #keep.lib.sizes = T retains original lib sizes, otherwise recomputes w remaining tags
 dim(my.counts)
 
-#### 3. Normalization ####
-my.counts <- calcNormFactors(my.counts, method = c("TMM"))
-my.counts$samples #wow, note the norm factor on lib05!
 
-# estimate dispersions (measure of inter-library variation for that tag)
-my.counts <- estimateDisp(my.counts) # opts that did not work: , trend="none", robust=TRUE
-summary(my.counts$prior.df) # this estimates the overall variability across the genome for this dataset
-sqrt(my.counts$common.disp) #this gives the coeff of var of biological variation
+#### 3. Normalization ####
+# Use TMM normalization, as it takes into account highly expressed genes that may take up sequencing rxn and make other genes look down-reg.
+my.counts <- calcNormFactors(my.counts, method = c("TMM"))
+my.counts$samples
+plot(my.counts$samples$norm.factors ~ my.counts$samples$lib.size)
+my.counts$samples$files[my.counts$samples$norm.factors < 0.8] # find which files are outliers in terms of norm.factors
+# is there anything specific about these files?
+
+# Estimate dispersions (measure inter-library variation per tag)
+my.counts <- estimateDisp(my.counts) # note that this can use a design matrix when provided 
+summary(my.counts$prior.df) # est. overall var. across genome for dataset
+sqrt(my.counts$common.disp) #coeff of var, for biol. var
 plotBCV(my.counts)
 
-# generate CPM matrix? #but does this use the normalized data i.e. calcNormFactors
-test <- cpm(my.counts, normalized.lib.sizes=T, log=F)
-head(test)
-str(test)
-write.csv(test, file = "test.csv")
+# generate CPM matrix
+normalized.output <- cpm(my.counts, normalized.lib.sizes = TRUE, log= F)
 
+# Compare the raw counts to the normalized cpm values (not log)
+my.counts$counts[1:5, 1:5] # not normalized, raw counts
+normalized.output[1:5, 1:5] # normalized lib size calculated cpm values
 
-#pca ?
-plotMDS(my.counts)
+# Visualize data
+plotMDS(x = my.counts, cex= 0.8) # note that this is supposed to be run on whatever you wrote calcNormFact() to
 
+write.csv(normalized.output, file = "03_normalized_data/normalized_output_matrix.csv")

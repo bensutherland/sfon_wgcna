@@ -19,6 +19,11 @@ Note that currently the input file has five lines at the end that begin with '__
 
 
 ## 1. Filtering and normalization ##
-These steps are performed in edgeR.
+These steps are performed in edgeR.   
+See the script `01_edgeR_normalization.R`   
+In brief, transcripts are filtered for low expression (counts > x in y samples), normalized by TMM normalization and library size, and translated to cpm values using the normalized library size.
+Data is visualized using mds plot, dispersions estimated (coefficient of variation for experiment).
 
+Data is output in a matrix of filtered and normalized genes (but all are still in linear, not log2).
+Output datafile can be found in `03_normalized_data/normalized_output_matrix.csv`
 
