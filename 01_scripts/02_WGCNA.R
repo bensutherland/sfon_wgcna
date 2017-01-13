@@ -1,14 +1,23 @@
-# WGCNA analysis
-# current analysis: female data disclude immature females and those with large liver weight
-setwd("/Users/wayne/Documents/bernatchez/Sfon_projects/SfeQ/04_WGCNA/02_WGCNA")
+## WGCNA analysis
+# This is the second step of the WGCNA repo, with input originating from 01_edgeR_normalization.R    
 
-#source("http://bioconductor.org/biocLite.R") 
-#install.packages(c("matrixStats", "Hmisc", "splines", "foreach", "doParallel", "reshape", "fastcluster", "dynamicTreeCut", "survival"))
-#biocLite(c("GO.db", "preprocessCore", "impute"))
-#install.packages("WGCNA")
+#rm(list=ls())
+
+## Install Packages
+# source("http://bioconductor.org/biocLite.R") 
+# install.packages(c("matrixStats", "Hmisc", "splines", "foreach", "doParallel", "reshape", "fastcluster", "dynamicTreeCut", "survival"))
+# biocLite(c("GO.db", "preprocessCore", "impute"))
+# install.packages("WGCNA")
 require("WGCNA")
 
-########1A INTERPRETATION INPUT ########
+# User guide is available here:
+
+# Note, the current analysis begins with female data that excludes immature females and large liver weight females, b/c manual says reduce variation and rem. outliers
+
+# Set working directory
+setwd("~/Documents/bernatchez/01_Sfon_projects/04_Sfon_eQTL/sfon_wgcna")
+
+#### 1.A. Input interpretation ########
 # Loading expression data
 options(stringsAsFactors = FALSE) #IMPORTANT SETTING
 

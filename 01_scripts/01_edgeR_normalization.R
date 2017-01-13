@@ -15,7 +15,6 @@ require("edgeR")
 
 # Set working directory
 setwd("~/Documents/bernatchez/01_Sfon_projects/04_Sfon_eQTL/sfon_wgcna")
-# setwd("/Users/wayne/Documents/bernatchez/Sfon_projects/SfeQ/eQTL_analysis/edgeR-norm")
 
 #### 1. Import Data ####
 # Import interpretation file
