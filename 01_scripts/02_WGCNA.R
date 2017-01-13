@@ -55,18 +55,37 @@ datExpr0 = as.data.frame(t(sfeqtl))
 colnames(datExpr0)[1:4] # genes
 rownames(datExpr0)[1:4] # samples
 
-# Could subset by female samples here if want to, also could by maturity index
-# temporary, needs adjustment
+datExpr0.bck <- datExpr0
+
+# Possible to subset
+# temporary, needs adjustment earlier in pipeline
 files.df$file.name <- gsub(x = files.df$file.name, pattern = ".txt", replacement = "")
 head(files.df$file.name)
-#females
-datExpr0.fem <- datExpr0[files.df$file.name[files.df$sex == "0"], ]
-files.df$fish.id[files.df$sex == "0"] # which samples is that?
-dim(datExpr0.fem) # 49 indiv, incl. parent *2
-#males
-datExpr0.male <- datExpr0[files.df$file.name[files.df$sex == "1"], ]
-files.df$fish.id[files.df$sex == "1"] # which samples is that?
-dim(datExpr0.male) # 55 indiv, incl. parent *2
+
+#females (all, not parent)
+files.df$fish.id[files.df$sex == "0" & files.df$fish.id != "F2F"] # IDs, doesn't include parents
+files.retain.fem <- files.df$file.name[files.df$sex == "0" & files.df$fish.id != "F2F"] # get filenames for subset
+files.retain.fem
+datExpr0.fem <- datExpr0[files.retain.fem, ]
+dim(datExpr0.fem) # 47 indiv, no parent
+rownames(datExpr0.fem)
+
+#females (only mature)
+files.df$fish.id[files.df$sex == "0" & files.df$matur == 1 & files.df$fish.id != "F2F"]
+files.retain.fem.mat <- files.df$file.name[files.df$sex == "0" & files.df$matur == 1 & files.df$fish.id != "F2F"]
+datExpr0.fem.mat <- datExpr0[files.retain.fem.mat,]
+dim(datExpr0.fem.mat) # 41 indiv, no parents
+rownames(datExpr0.fem.mat)
+
+#males (maturity all same)
+files.df$fish.id[files.df$sex == "1" & files.df$fish.id != "F2M"] # IDs, doesn't include parents
+files.retain.male <- files.df$file.name[files.df$sex == "1" & files.df$fish.id != "F2M"]
+datExpr0.male <- datExpr0[files.retain.male, ]
+dim(datExpr0.male) # 53 indiv, no parent
+
+## Choose working subset, for now, use female, mature
+datExpr0 <- datExpr0.fem.mat
+
 
 #### 2. Data Quality Control ####
 gsg = goodSamplesGenes(datExpr0, verbose = 3)
