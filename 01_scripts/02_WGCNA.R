@@ -56,7 +56,11 @@ colnames(datExpr0)[1:4] # genes
 rownames(datExpr0)[1:4] # samples
 
 datExpr0.bck <- datExpr0
+## To go back
+# datExpr0 <- datExpr0.bck
 
+
+#### 2. Create subset and filter on low expr in subset ####
 # Possible to subset
 # temporary, needs adjustment earlier in pipeline
 files.df$file.name <- gsub(x = files.df$file.name, pattern = ".txt", replacement = "")
@@ -111,37 +115,39 @@ datExpr0[1:5, 1:5]
 datExpr0.filt <- datExpr0[ ,keep.genes]
 dim(datExpr0.filt)
 
+# now replace with filtered list
+datExpr0 <- datExpr0.filt
+
 ####
 
 length(which(datExpr0[,2] > -1))
 
 
-#### 2. Data Quality Control ####
+#### 3. Data Quality Control ####
 gsg = goodSamplesGenes(datExpr0, verbose = 3)
 gsg$allOK #see tutorial if not true
 
 # plot samples to detect outliers
-par(mfrow=c(1,1))
+par(mfrow=c(1,1), mar = c(0,4,2,0), cex = 0.6)
 sampleTree <- hclust(dist(datExpr0), method = "average") # default dist metric = euclidean; hclust agglomeration is "average"
-par(mar = c(0,4,2,0), cex = 0.6)
 plot(sampleTree, main = "Sample clustering to detect outliers", sub="", xlab="", cex.lab = 1.5,
      cex.axis = 1.5, cex.main = 2)
-# There are three main clusters, and as we identified, the outlier cluster is a problem (large livers)
+# For mature females, 3 main clusters, outlier having large livers
 # To improve resolution on trends unrelated to the outlier cluster (i.e. liver weight), cut the tree.
 
 # Remove Outliers
-#for cpm > 1 in all samples
-cutline <- 180 # choose height at which to cut
+cutline <- 200 # choose height at which to cut
 abline(h = cutline, col = "red") # add to plot
 
-clust = cutreeStatic(sampleTree.fem, cutHeight = cutline, minSize = 10)
+clust = cutreeStatic(sampleTree, cutHeight = cutline, minSize = 10)
 table(clust) # clust 1 contains the samples we want to keep
 keepSamples = (clust==1)
-datExpr = datExpr0[keepSamples, ] # subset the expression data to only keep samples in the main group
+datExpr = datExpr0[keepSamples, ] # keep only main group
 nGenes = ncol(datExpr)
 nSamples = nrow(datExpr)
-# expression without outliers is now in datExpr
+# outlier removed, now within datExpr
 
+#### 4. Incorporate trait data ####
 ########1D TRAIT DATA INPUT#####
 # read in the trait data and match with the expr data
 traitData <- files.df
