@@ -62,6 +62,8 @@ datExpr0.bck <- datExpr0
 files.df$file.name <- gsub(x = files.df$file.name, pattern = ".txt", replacement = "")
 head(files.df$file.name)
 
+## Note: may need to still remove the large liver weight samples if we want to remove all groupings and variation
+
 #females (all, not parent)
 files.df$fish.id[files.df$sex == "0" & files.df$fish.id != "F2F"] # IDs, doesn't include parents
 files.retain.fem <- files.df$file.name[files.df$sex == "0" & files.df$fish.id != "F2F"] # get filenames for subset
@@ -85,6 +87,33 @@ dim(datExpr0.male) # 53 indiv, no parent
 
 ## Choose working subset, for now, use female, mature
 datExpr0 <- datExpr0.fem.mat
+
+
+# Note: Will need to do some filtering similar to the following (remember, at log2), and cpm thresh was 0.5, so log2(0.5)
+# Filter subset data
+num.indiv <- 5
+
+dim(datExpr0)
+expressed <- NULL
+keep.genes <- NULL
+for(i in 1:length(colnames(datExpr0))) { 
+  expressed <- length(which(datExpr0[,i] > -1))
+  print(expressed)
+  if (expressed > num.indiv) {
+    keep.genes <- c(keep.genes, colnames(datExpr0)[i])
+  }
+}
+
+head(keep.genes)
+length(keep.genes)
+
+datExpr0[1:5, 1:5]
+datExpr0.filt <- datExpr0[ ,keep.genes]
+dim(datExpr0.filt)
+
+####
+
+length(which(datExpr0[,2] > -1))
 
 
 #### 2. Data Quality Control ####
