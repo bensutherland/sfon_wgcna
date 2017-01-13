@@ -4,9 +4,9 @@
 
 #rm(list=ls())
 
-# Install Packages
-source("http://bioconductor.org/biocLite.R")
-biocLite("edgeR")
+## Install Packages
+#source("http://bioconductor.org/biocLite.R")
+#biocLite("edgeR")
 require("edgeR")
 
 # User guides are here:
@@ -113,3 +113,6 @@ write.csv(normalized.output, file = "03_normalized_data/normalized_output_matrix
 # # output as normalized log2 (in progress)
 normalized.output.log2 <- cpm(my.counts, normalized.lib.sizes = TRUE, log= T, prior.count = 1)
 write.csv(normalized.output, file = "03_normalized_data/normalized_output_matrix_log2.csv")
+
+# output object
+save.image(file = "02_input_data/sfon_wgcna_01_output.RData") # save out existing data 
