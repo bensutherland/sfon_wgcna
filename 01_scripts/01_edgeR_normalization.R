@@ -49,14 +49,10 @@ names(interp)
 head(interp$file.name)
 
 #### 2. Filter Data ####
-#keep <- rowSums(my.counts[1,1] > 10) >= 2
-
 # Find an optimal cpm filt (edgeRuserguide suggests 5-10 reads mapping to transcript)
 min.reads.mapping.per.transcript <- 10
 cpm.filt <- min.reads.mapping.per.transcript / min(my.counts$samples$lib.size) * 1000000
 cpm.filt # min cpm filt
-
-# maybe should use min(my.counts$samples$lib.size) rather than mean?
 
 min.ind <- 5 # choose the minimum number of individuals that need to pass the threshold
 
@@ -83,6 +79,8 @@ summary(my.counts$prior.df) # est. overall var. across genome for dataset
 sqrt(my.counts$common.disp) #coeff of var, for biol. var
 plotBCV(my.counts)
 
+
+#### 4. Prepare Output ####
 # generate CPM matrix
 normalized.output <- cpm(my.counts, normalized.lib.sizes = TRUE, log= F)
 
@@ -90,7 +88,18 @@ normalized.output <- cpm(my.counts, normalized.lib.sizes = TRUE, log= F)
 my.counts$counts[1:5, 1:5] # not normalized, raw counts
 normalized.output[1:5, 1:5] # normalized lib size calculated cpm values
 
-# Visualize data
+# output as normalized linear
+write.csv(normalized.output, file = "03_normalized_data/normalized_output_matrix.csv")
+
+# # output as normalized log2 (in progress)
+normalized.output.log2 <- cpm(my.counts, normalized.lib.sizes = TRUE, log= T, prior.count = 1)
+write.csv(normalized.output, file = "03_normalized_data/normalized_output_matrix_log2.csv")
+
+# output object
+save.image(file = "02_input_data/sfon_wgcna_01_output.RData") # save out existing data 
+
+
+#### 5. Visualize data ####
 #plot using sample IDs
 plotMDS(x = my.counts, cex= 0.8) # note that this is supposed to be run on whatever you wrote calcNormFact() to
 #plot using sex
@@ -106,13 +115,3 @@ plotMDS(x = my.counts, cex= 0.8
 # note, this is how matching works:
 interp$sex[match(my.counts$samples$files, interp$file.name)] # matches order 
 interp$sex #see not the same
-
-# output as normalized linear
-write.csv(normalized.output, file = "03_normalized_data/normalized_output_matrix.csv")
-
-# # output as normalized log2 (in progress)
-normalized.output.log2 <- cpm(my.counts, normalized.lib.sizes = TRUE, log= T, prior.count = 1)
-write.csv(normalized.output, file = "03_normalized_data/normalized_output_matrix_log2.csv")
-
-# output object
-save.image(file = "02_input_data/sfon_wgcna_01_output.RData") # save out existing data 
