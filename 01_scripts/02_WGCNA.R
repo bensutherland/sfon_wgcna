@@ -17,16 +17,23 @@ require("WGCNA")
 # Set working directory
 setwd("~/Documents/bernatchez/01_Sfon_projects/04_Sfon_eQTL/sfon_wgcna")
 
-#### 1.A. Input interpretation ########
-# Loading expression data
+#### 1 Import interp file and data ####
+# Important setup for loading expression data
 options(stringsAsFactors = FALSE) #IMPORTANT SETTING
 
-# read in the complete interpretation file
-files <- read.csv("/Users/wayne/Documents/bernatchez/Sfon_projects/SfeQ/02-RNA-Seq_analysis/00_archive/SFEQ-interp-may27-15.csv")
-files.df <- as.data.frame(files)
+# Load part 1 results
+load("02_input_data/sfon_wgcna_01_output.RData")
+
+# Create data.frame
+files.df <- as.data.frame(interp)
 names(files.df)
 
-# for WGCNA proper fn, need to recode female/male as 0 and 1 (in that order)
+# There were some issues with the sex of individuals in the interp file, but it looks like those samples are not in this set
+files.df$fish.id[files.df$male.sperm.conc != "NA" & files.df$sex == "F"]
+files.df$fish.id[files.df$fem.egg.diam != "NA" & files.df$sex == "M"]
+
+# Need to recode females and males as binary data
+head(files.df[,c("sex","matur")])
 files.df$sex[files.df$sex=="F"] <- 0
 files.df$sex[files.df$sex=="M"] <- 1
 files.df$sex <- as.numeric(files.df$sex)
@@ -35,43 +42,33 @@ files.df$matur[files.df$matur=="-"] <- 0
 files.df$matur[files.df$matur=="+"] <- 1
 files.df$matur <- as.numeric(files.df$matur)
 
-# # select only females with matur==1
-# fem.files <- files.df$file.name[files.df$sex==0 & files.df$matur==1]
-# fem.files <- fem.files[!is.na(fem.files)] # this removes parents
-# 
-# # find positions of the wanted filenames in the files.df
-# posit.fem.files <- which(files.df$file.name %in% fem.files)
-# fem.files.df <- files.df[posit.fem.files,] # select only these
-# dim(fem.files.df)
+head(files.df[,c("sex","matur")])
 
-########1B Normalized expression input ########
-# Read in the normalized data (cols = samples, rows = contigs)
-
-# all data:
-sfeqtl <- read.csv(file="/Users/wayne/Documents/bernatchez/Sfon_projects/SfeQ/02-RNA-Seq_analysis/02_raw_counts/log2.outcpm-11counts_inmorethan_30ind.csv")
-
-# # Input female-specific filtered and normalized genes:
-# sfeqtl <- read.csv(file="/Users/wayne/Documents/bernatchez/Sfon_projects/SfeQ/02-RNA-Seq_analysis/03_normalized/log2.outcpm.fem_only-cpm10_.csv")
-# dim(sfeqtl)
-# head(sfeqtl[1:5,1:5])
-# str(sfeqtl[1:5,1:5]) #confirm expression values are numeric
+# Make object with expression data
+sfeqtl <- normalized.output.log2 # (cols = samples, rows = contigs)
+dim(sfeqtl)
+sfeqtl[1:5,1:5]
+str(sfeqtl[1:5,1:5]) #confirm expression values are numeric
 
 # move gene names to row-names, and transpose
-datExpr0 = as.data.frame(t(sfeqtl[, -c(1)])) #remove auxillary data and transpose (excluding contigs)
-names(datExpr0) = sfeqtl[,1] #provide contig IDs as colnames
-head(datExpr0[1:5,1:5])
+datExpr0 = as.data.frame(t(sfeqtl))
+colnames(datExpr0)[1:4] # genes
+rownames(datExpr0)[1:4] # samples
 
-# Subset to keep the wanted female expression data
-# datExpr0.fem <- datExpr0[fem.files,]
-# dim(datExpr0.fem)
-# head(datExpr0.fem[1:5,1:5])
-# 
-# Replace the long form row.names with short form (libID)
-posit.files <- which(files.df$file.name %in% row.names(datExpr0))
-rownames(datExpr0) <- files.df$lib.ID[posit.files]
-head(datExpr0[1:5,1:5])
+# Could subset by female samples here if want to, also could by maturity index
+# temporary, needs adjustment
+files.df$file.name <- gsub(x = files.df$file.name, pattern = ".txt", replacement = "")
+head(files.df$file.name)
+#females
+datExpr0.fem <- datExpr0[files.df$file.name[files.df$sex == "0"], ]
+files.df$fish.id[files.df$sex == "0"] # which samples is that?
+dim(datExpr0.fem) # 49 indiv, incl. parent *2
+#males
+datExpr0.male <- datExpr0[files.df$file.name[files.df$sex == "1"], ]
+files.df$fish.id[files.df$sex == "1"] # which samples is that?
+dim(datExpr0.male) # 55 indiv, incl. parent *2
 
-########1C EXPRESSION DATA CHECKING ########
+#### 2. Data Quality Control ####
 gsg = goodSamplesGenes(datExpr0, verbose = 3)
 gsg$allOK #see tutorial if not true
 
