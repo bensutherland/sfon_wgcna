@@ -330,7 +330,7 @@ plotDendroAndColors(hierTOM, cbind(dynamicColors, mergedColors),
 
 table(mergedColors) # after merging, how many modules remain and with how many genes
 
-
+save.image(file = "02_input_data/sfon_wgcna_save_point_step8.Rdata")
 ##### HERE TODAY #####
 
 ######## END SELECT ONLY MOST CONNECTED CONTIGS #######
