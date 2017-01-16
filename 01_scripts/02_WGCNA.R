@@ -1,16 +1,14 @@
 ## WGCNA analysis
 # This is the second step of the WGCNA repo, with input originating from 01_edgeR_normalization.R    
 
-#rm(list=ls())
+# rm(list=ls())
 
 ## Install Packages
-# source("http://bioconductor.org/biocLite.R") 
+# source("http://bioconductor.org/biocLite.R")
 # install.packages(c("matrixStats", "Hmisc", "splines", "foreach", "doParallel", "reshape", "fastcluster", "dynamicTreeCut", "survival"))
 # biocLite(c("GO.db", "preprocessCore", "impute"))
 # install.packages("WGCNA")
 require("WGCNA")
-
-# User guide is available here:
 
 # Note, the current analysis begins with female data that excludes immature females and large liver weight females, b/c manual says reduce variation and rem. outliers
 
@@ -32,16 +30,16 @@ names(files.df)
 files.df$fish.id[files.df$male.sperm.conc != "NA" & files.df$sex == "F"]
 files.df$fish.id[files.df$fem.egg.diam != "NA" & files.df$sex == "M"]
 
-# Need to recode females and males as binary data
+# Recode sex as binary
 head(files.df[,c("sex","matur")])
 files.df$sex[files.df$sex=="F"] <- 0
 files.df$sex[files.df$sex=="M"] <- 1
 files.df$sex <- as.numeric(files.df$sex)
-#      also, need to recode matur as 0,1
+
+# Recode matur as binary
 files.df$matur[files.df$matur=="-"] <- 0
 files.df$matur[files.df$matur=="+"] <- 1
 files.df$matur <- as.numeric(files.df$matur)
-
 head(files.df[,c("sex","matur")])
 
 # Make object with expression data
@@ -50,7 +48,7 @@ dim(sfeqtl)
 sfeqtl[1:5,1:5]
 str(sfeqtl[1:5,1:5]) #confirm expression values are numeric
 
-# move gene names to row-names, and transpose
+# Transpose data
 datExpr0 = as.data.frame(t(sfeqtl))
 colnames(datExpr0)[1:4] # genes
 rownames(datExpr0)[1:4] # samples
@@ -60,16 +58,16 @@ datExpr0.bck <- datExpr0
 # datExpr0 <- datExpr0.bck
 
 
-#### 2. Create subset and filter on low expr in subset ####
-# Possible to subset
-# temporary, needs adjustment earlier in pipeline
+#### 2.a. Create subsets of data (samples) ####
+# Change files.df$file.name to match the short form name
 files.df$file.name <- gsub(x = files.df$file.name, pattern = ".txt", replacement = "")
 head(files.df$file.name)
 
-## Note: may need to still remove the large liver weight samples if we want to remove all groupings and variation
+## Note: may need to still remove the large liver weight samples
+# if we want to remove all groupings and variation
 
 #females (all, not parent)
-files.df$fish.id[files.df$sex == "0" & files.df$fish.id != "F2F"] # IDs, doesn't include parents
+files.df$fish.id[files.df$sex == "0" & files.df$fish.id != "F2F"] # Show fish.id, no parent
 files.retain.fem <- files.df$file.name[files.df$sex == "0" & files.df$fish.id != "F2F"] # get filenames for subset
 files.retain.fem
 datExpr0.fem <- datExpr0[files.retain.fem, ]
@@ -77,32 +75,37 @@ dim(datExpr0.fem) # 47 indiv, no parent
 rownames(datExpr0.fem)
 
 #females (only mature)
-files.df$fish.id[files.df$sex == "0" & files.df$matur == 1 & files.df$fish.id != "F2F"]
-files.retain.fem.mat <- files.df$file.name[files.df$sex == "0" & files.df$matur == 1 & files.df$fish.id != "F2F"]
+files.df$fish.id[files.df$sex == "0" & files.df$matur == 1 & files.df$fish.id != "F2F"] # Show fish.id, no parent
+files.retain.fem.mat <- files.df$file.name[files.df$sex == "0" & files.df$matur == 1 & files.df$fish.id != "F2F"]  # get filenames for subset
 datExpr0.fem.mat <- datExpr0[files.retain.fem.mat,]
 dim(datExpr0.fem.mat) # 41 indiv, no parents
 rownames(datExpr0.fem.mat)
 
 #males (maturity all same)
-files.df$fish.id[files.df$sex == "1" & files.df$fish.id != "F2M"] # IDs, doesn't include parents
-files.retain.male <- files.df$file.name[files.df$sex == "1" & files.df$fish.id != "F2M"]
+files.df$fish.id[files.df$sex == "1" & files.df$fish.id != "F2M"] # Show fish.id, no parent
+files.retain.male <- files.df$file.name[files.df$sex == "1" & files.df$fish.id != "F2M"] # get filenames for subset
 datExpr0.male <- datExpr0[files.retain.male, ]
 dim(datExpr0.male) # 53 indiv, no parent
 
-## Choose working subset, for now, use female, mature
+#### 2.b. Choose working subset and filter ####
+## female, mature
 datExpr0 <- datExpr0.fem.mat
 
+# Note: Will need to do some filtering similar to the following 
+# (remember, at log2), and cpm thresh was 0.5, so log2(0.5)
 
-# Note: Will need to do some filtering similar to the following (remember, at log2), and cpm thresh was 0.5, so log2(0.5)
-# Filter subset data
+#### 2.c. Filter the subset ####
+## Define which genes have > req num expressing samples
 num.indiv <- 5
 
 dim(datExpr0)
 expressed <- NULL
 keep.genes <- NULL
+expressed.tally <- NULL
 for(i in 1:length(colnames(datExpr0))) { 
   expressed <- length(which(datExpr0[,i] > -1))
   print(expressed)
+  expressed.tally <- c(expressed.tally, expressed)
   if (expressed > num.indiv) {
     keep.genes <- c(keep.genes, colnames(datExpr0)[i])
   }
@@ -111,16 +114,19 @@ for(i in 1:length(colnames(datExpr0))) {
 head(keep.genes)
 length(keep.genes)
 
-datExpr0[1:5, 1:5]
+# Plot the freq of genes for each bin of number samples expressed?
+hist(expressed.tally
+     , main = "Transcripts expressed in number samples"
+     , xlab = "Num. indiv. expr gene"
+     , ylab = "Num. transcripts in bin"
+     , las = 1) 
+
+# Filter by low expression
 datExpr0.filt <- datExpr0[ ,keep.genes]
 dim(datExpr0.filt)
 
-# now replace with filtered list
+# Replace orignal object with filtered
 datExpr0 <- datExpr0.filt
-
-####
-
-length(which(datExpr0[,2] > -1))
 
 
 #### 3. Data Quality Control ####
