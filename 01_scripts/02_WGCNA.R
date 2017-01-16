@@ -63,9 +63,6 @@ datExpr0.bck <- datExpr0
 files.df$file.name <- gsub(x = files.df$file.name, pattern = ".txt", replacement = "")
 head(files.df$file.name)
 
-## Note: may need to still remove the large liver weight samples
-# if we want to remove all groupings and variation
-
 #females (all, not parent)
 files.df$fish.id[files.df$sex == "0" & files.df$fish.id != "F2F"] # Show fish.id, no parent
 files.retain.fem <- files.df$file.name[files.df$sex == "0" & files.df$fish.id != "F2F"] # get filenames for subset
@@ -151,23 +148,24 @@ keepSamples = (clust==1)
 datExpr = datExpr0[keepSamples, ] # keep only main group
 nGenes = ncol(datExpr)
 nSamples = nrow(datExpr)
-# outlier removed, now within datExpr
+
 
 #### 4. Incorporate trait data ####
-########1D TRAIT DATA INPUT#####
-# read in the trait data and match with the expr data
+# Input trait data, and remove unneeded columns
 traitData <- files.df
 dim(traitData)
-colnames(traitData) #need to keep phenos by name, safer
-colnames(traitData[, -c(1,3:5,7,8:10,14,26:27,30,41:45)]) #NOTE: what is this d.weight trait..?
-allTraits <- traitData[, -c(1,3:5,8:10,14,26:27,30,41:45)] # remove unneeded columns
+colnames(traitData)
+traits.to.remove <- c(3:5,7,8:10,14,26:27,30,41:45)
+colnames(traitData[, -c(traits.to.remove)]) # these are the phenos to remove
+allTraits <- traitData[, -c(traits.to.remove)] # remove unneeded columns
 names(allTraits)
 
-# Form a dataframe analogous to expression data that will hold the clinical traits.
+# Dataframe w/ clinical traits to match expr data
 libSamples = rownames(datExpr)
-traitRows = match(libSamples, allTraits$lib.ID); #matches sample names! perfect
-datTraits = allTraits[traitRows, -1] #collect traits for required samples, remove sample names
-rownames(datTraits) = allTraits[traitRows, 1]; #add sample names as row-names
+traitRows = match(libSamples, allTraits$file.name)
+datTraits = allTraits[traitRows,] #collect traits for required samples
+rownames(datTraits) <- datTraits[,2] # use lib.ID as row name
+datTraits <- datTraits[,-c(1:2)] # remove file names and lib names
 rownames(datTraits)
 collectGarbage()
 
