@@ -23,7 +23,7 @@ options(stringsAsFactors = FALSE) #IMPORTANT SETTING
 load("02_input_data/sfon_wgcna_01_output.RData")
 
 # Enable parallel processing
-enableWGCNAThreads(nThreads = 3)
+enableWGCNAThreads(nThreads = 2)
 
 # Create data.frame
 files.df <- as.data.frame(interp)
@@ -202,33 +202,37 @@ plotDendroAndColors(sampleTree2, traitColors,
 # not necessary to re-run after determining best B (soft-thresholding power)
 powers = c(1:10, seq(from = 12, to=20, by=2)) # Choose a set of soft-thresholding powers
 
-## Call the network topology analysis function
-sft = pickSoftThreshold(datExpr, powerVector = powers, verbose = 5
-                        , networkType = "unsigned"  #default 
-                        , ) 
-
-## Plot to pick soft threshold power
-par(mfrow = c(1,2))
-cex1 = 0.9
-
-# Scale-free topology fit index as a function of the soft-thresholding power
-plot(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],
-     xlab="Soft Threshold (power)",ylab="Scale Free Topology Model Fit,signed R^2",type="n",
-     main = paste("Scale independence"));
-text(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],
-     labels=powers,cex=cex1,col="red");
-
-# Mean connectivity as a function of the soft-thresholding power
-plot(sft$fitIndices[,1], sft$fitIndices[,5],
-     xlab="Soft Threshold (power)",ylab="Mean Connectivity", type="n",
-     main = paste("Mean connectivity"))
-text(sft$fitIndices[,1], sft$fitIndices[,5], labels=powers, cex=cex1,col="red")
+# ## Call the network topology analysis function
+# sft = pickSoftThreshold(datExpr, powerVector = powers, verbose = 5
+#                         , networkType = "unsigned"  #default 
+#                         , ) 
+# 
+# ## Plot to pick soft threshold power
+# par(mfrow = c(1,2))
+# cex1 = 0.9
+# 
+# # Scale-free topology fit index as a function of the soft-thresholding power
+# plot(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],
+#      xlab="Soft Threshold (power)",ylab="Scale Free Topology Model Fit,signed R^2",type="n",
+#      main = paste("Scale independence"));
+# text(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],
+#      labels=powers,cex=cex1,col="red");
+# 
+# # Mean connectivity as a function of the soft-thresholding power
+# plot(sft$fitIndices[,1], sft$fitIndices[,5],
+#      xlab="Soft Threshold (power)",ylab="Mean Connectivity", type="n",
+#      main = paste("Mean connectivity"))
+# text(sft$fitIndices[,1], sft$fitIndices[,5], labels=powers, cex=cex1,col="red")
 
 # Result summary:
 # Females, no outliers, choose power = 6 (note that this is the default)
 # this was chosen because...
 
 beta1=6 # If using signed network, double the beta1
+
+
+#### SAVE POINT ####
+save.image(file = "02_input_data/sfon_wgcna_save_point_step5.RData")
 
 
 #### 5.b. Optional: select only most connected contigs ####
