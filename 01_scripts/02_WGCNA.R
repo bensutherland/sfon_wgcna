@@ -150,7 +150,7 @@ nGenes = ncol(datExpr)
 nSamples = nrow(datExpr)
 
 
-#### 4. Incorporate trait data ####
+#### 4.a. Incorporate trait data ####
 # Input trait data, and remove unneeded columns
 traitData <- files.df
 dim(traitData)
@@ -158,7 +158,6 @@ colnames(traitData)
 traits.to.remove <- c(3:5,7,8:10,14,26:27,30,41:45)
 colnames(traitData[, -c(traits.to.remove)]) # these are the phenos to remove
 allTraits <- traitData[, -c(traits.to.remove)] # remove unneeded columns
-names(allTraits)
 
 # Dataframe w/ clinical traits to match expr data
 libSamples = rownames(datExpr)
@@ -169,14 +168,20 @@ datTraits <- datTraits[,-c(1:2)] # remove file names and lib names
 rownames(datTraits)
 collectGarbage()
 
-##  expr data is 'datExpr'
-#   trait data is 'datTraits'
 
-# After removing outliers, re-cluster samples
+# Recap:
+# expr data is 'datExpr'
+# trait data is 'datTraits'
+
+# reduce name size for datExpr
+rownames(datExpr) <- sub('.*\\.', '', x = rownames(datExpr)) 
+# this works by searching '.*' one or more characters, followed by a dot '\\.' (\\ is escape), this will match until the last . char in the string.
+
+#### 4.b. Re-cluster after rem outliers ####
 sampleTree2 = hclust(dist(datExpr), method = "average")
 traitColors = numbers2colors(datTraits, signed = F) # Use color to represent trait values (white = low; red = high; grey = NA)
-# Plot the sample dendrogram and the colors underneath.
 
+# Plot sample dendrogram w/ traits
 plotDendroAndColors(sampleTree2, traitColors,
                     groupLabels = names(datTraits),
                     cex.dendroLabels = 0.7,
@@ -188,6 +193,7 @@ plotDendroAndColors(sampleTree2, traitColors,
                     #abHeight = 180,
                     #abCol = "red"
                     )
+
 
 ########2A CHOOSE SOFT-THRESH POWER (Network Topol) #####
 # not necessary to re-run after determining best B (soft-thresholding power)
