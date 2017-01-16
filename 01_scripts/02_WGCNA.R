@@ -22,6 +22,9 @@ options(stringsAsFactors = FALSE) #IMPORTANT SETTING
 # Load part 1 results
 load("02_input_data/sfon_wgcna_01_output.RData")
 
+# Enable parallel processing
+enableWGCNAThreads(nThreads = 3)
+
 # Create data.frame
 files.df <- as.data.frame(interp)
 names(files.df)
@@ -195,38 +198,41 @@ plotDendroAndColors(sampleTree2, traitColors,
                     )
 
 
-########2A CHOOSE SOFT-THRESH POWER (Network Topol) #####
+#### 5.a Determine soft-thresh power (Network Topol) ####
 # not necessary to re-run after determining best B (soft-thresholding power)
-powers = c(c(1:10), seq(from = 12, to=20, by=2)) # Choose a set of soft-thresholding powers
-# sft = pickSoftThreshold(datExpr, powerVector = powers, verbose = 5) # Call the network topology analysis function
+powers = c(1:10, seq(from = 12, to=20, by=2)) # Choose a set of soft-thresholding powers
+
+## Call the network topology analysis function
+sft = pickSoftThreshold(datExpr, powerVector = powers, verbose = 5
+                        , networkType = "unsigned"  #default 
+                        , ) 
+
+## Plot to pick soft threshold power
+par(mfrow = c(1,2))
+cex1 = 0.9
+
+# Scale-free topology fit index as a function of the soft-thresholding power
+plot(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],
+     xlab="Soft Threshold (power)",ylab="Scale Free Topology Model Fit,signed R^2",type="n",
+     main = paste("Scale independence"));
+text(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],
+     labels=powers,cex=cex1,col="red");
+
+# Mean connectivity as a function of the soft-thresholding power
+plot(sft$fitIndices[,1], sft$fitIndices[,5],
+     xlab="Soft Threshold (power)",ylab="Mean Connectivity", type="n",
+     main = paste("Mean connectivity"))
+text(sft$fitIndices[,1], sft$fitIndices[,5], labels=powers, cex=cex1,col="red")
+
+# Result summary:
+# Females, no outliers, choose power = 6 (note that this is the default)
+# this was chosen because...
+
+beta1=6 # If using signed network, double the beta1
 
 
-# # #Plot the results to pick your soft threshold power
-# par(mfrow = c(1,2))
-# cex1 = 0.9;
-# # Scale-free topology fit index as a function of the soft-thresholding power
-# plot(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],
-#      xlab="Soft Threshold (power)",ylab="Scale Free Topology Model Fit,signed R^2",type="n",
-#      main = paste("Scale independence"));
-# text(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],
-#      labels=powers,cex=cex1,col="red");
-# # this line corresponds to using an R^2 cut-off of h
-# abline(h=0.80,col="red")
-# # Mean connectivity as a function of the soft-thresholding power
-# plot(sft$fitIndices[,1], sft$fitIndices[,5],
-#      xlab="Soft Threshold (power)",ylab="Mean Connectivity", type="n",
-#      main = paste("Mean connectivity"))
-# text(sft$fitIndices[,1], sft$fitIndices[,5], labels=powers, cex=cex1,col="red")
-
-# result summary:
-# #Females, remove outlier12 (power = 5)
-# #Females, with outlier12 (power = 6)
-# # Default = 6
-
-
-beta1=5 #remember, if using signed network to double the beta1
-######## SELECT ONLY THE MOST CONNECTED CONTIGS #####
-# characterize connectivity by checking adjacency of all contigs
+#### 5.b. Optional: select only most connected contigs ####
+# Characterize connectivity by checking adjacency of all contigs
 ADJ = adjacency(datExpr,power=beta1, type="unsigned") #for an unsigned network
 #this creates a matrix of gene x genes
 Connectivity=softConnectivity(datExpr,power=beta1)-1 #calculates the connectivity of each contig
