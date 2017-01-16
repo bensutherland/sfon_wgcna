@@ -9,11 +9,14 @@
 # biocLite(c("GO.db", "preprocessCore", "impute"))
 # install.packages("WGCNA")
 require("WGCNA")
+#biocLite("edgeR")
+require("edgeR")
 
 # Note, the current analysis begins with female data that excludes immature females and large liver weight females, b/c manual says reduce variation and rem. outliers
 
 # Set working directory
 setwd("~/Documents/bernatchez/01_Sfon_projects/04_Sfon_eQTL/sfon_wgcna")
+# setwd("~/Documents/sfon_wgcna/") # macpro
 
 #### 1 Import interp file and data ####
 # Important setup for loading expression data
@@ -24,6 +27,9 @@ load("02_input_data/sfon_wgcna_01_output.RData")
 
 # Enable parallel processing
 enableWGCNAThreads(nThreads = 2)
+# enableWGCNAThreads(nThreads = 10) #MacPro
+
+### End front matter ###
 
 # Create data.frame
 files.df <- as.data.frame(interp)
@@ -232,14 +238,22 @@ beta1=6 # If using signed network, double the beta1
 
 
 #### SAVE POINT ####
-save.image(file = "02_input_data/sfon_wgcna_save_point_step5.RData")
-
+# save.image(file = "02_input_data/sfon_wgcna_save_point_step5.RData")
+# load("02_input_data/sfon_wgcna_save_point_step5.RData")
 
 #### 5.b. Optional: select only most connected contigs ####
 # Characterize connectivity by checking adjacency of all contigs
 ADJ = adjacency(datExpr,power=beta1, type="unsigned") #for an unsigned network
 #this creates a matrix of gene x genes
-Connectivity=softConnectivity(datExpr,power=beta1)-1 #calculates the connectivity of each contig
+
+# save.image(file = "02_input_data/sfon_wgcna_save_point_step6.RData")
+# load("02_input_data/sfon_wgcna_save_point_step6.RData")
+gc()
+
+#calc the connectivity of each gene
+Connectivity=softConnectivity(datExpr,power=beta1)-1
+gc()
+
 
 ###2.b.3 Topological Overlap Matrix (TOM)####
 # minimize noise and spurious associations by transforming adjacency to Topological Overlap Matrix
