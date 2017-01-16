@@ -244,7 +244,7 @@ beta1=6 # If using signed network, double the beta1
 #### 5.b. Optional: select only most connected contigs ####
 # Characterize connectivity by checking adjacency of all contigs
 ADJ = adjacency(datExpr,power=beta1, type="unsigned") #for an unsigned network
-#this creates a matrix of gene x genes
+#this creates a matrix of gene x genes (Takes a VERY long time, creates large object ADJ)
 
 # save.image(file = "02_input_data/sfon_wgcna_save_point_step6.RData")
 # load("02_input_data/sfon_wgcna_save_point_step6.RData")
@@ -254,59 +254,70 @@ gc()
 Connectivity=softConnectivity(datExpr,power=beta1)-1
 gc()
 
+# Restrict to most connected genes
+ConnectivityCut = 25000 # number of most connected genes to keep
+ConnectivityRank = rank(-Connectivity)
+restConnectivity = ConnectivityRank <= ConnectivityCut # true/false for ea. gene to keep or not
+sum(restConnectivity) # should match the ConnectivityCut above
+gc()
 
-###2.b.3 Topological Overlap Matrix (TOM)####
+# Re-define adjacency matrix for only those most connected genes
+ADJ = adjacency(datExpr[,restConnectivity], power=beta1, type = "unsigned")
+gc()
+
+## This should be smaller than the above (4 Gb vs 12 Gb), so re-save out
+# save.image(file = "02_input_data/sfon_wgcna_save_point_step7.RData")
+
+
+#### 5.c. Topological overlap matrix (TOM) ####
 # minimize noise and spurious associations by transforming adjacency to Topological Overlap Matrix
 # and calculate the corresponding dissimilarity
 
-#####RESTRICT TO MOST CONNECTED GENES######
-ConnectivityCut = 25000 # number of most connected genes that will be considered
-ConnectivityRank = rank(-Connectivity)
-restConnectivity = ConnectivityRank <= ConnectivityCut # true/false for each contig whether it is to be included or not
-sum(restConnectivity)
+# Compute the topological overlap matrix based on the adjacency matrix.
+dissTOM=TOMdist(ADJ) # default is "unsigned"
 gc()
 
-# Now we define the adjacency matrix for $ConnectivityCut
-ADJ = adjacency(datExpr[,restConnectivity],power=beta1, type = "unsigned")
-gc()
-# The following code computes the topological overlap matrix based on the adjacency matrix.
-dissTOM=TOMdist(ADJ)
-gc()
+# Hierarchical cluster the TOM matrix
+hierTOM = hclust(as.dist(dissTOM), method="average")
 
-# Now we carry out hierarchical clustering with the TOM matrix
-hierTOM = hclust(as.dist(dissTOM),method="average")
-par(mfrow=c(1,1))
-
-#dynamic cutting
-colorh1=cutreeDynamic(hierTOM, cutHeight = NULL, minClusterSize = 50)
+# Cut tree using dynamic cutting
+colorh1 = cutreeDynamic(hierTOM, cutHeight = NULL, minClusterSize = 50)
 dynamicColors = labels2colors(colorh1) # Convert numeric lables into colors
 
-# Plot the dendrogram with module colors
+# How many contigs were included?
+num.transcripts <- length(ADJ[,1])
+
+# Plot dendrogram w/ module colors
+par(mfrow=c(1,1))
 plotDendroAndColors(hierTOM, dynamicColors, "Dynamic Tree Cut",
                     dendroLabels = FALSE, hang = 0.03,
                     addGuide = TRUE, guideHang = 0.05,
-                    main = paste(c(nGenes, "contigs")))
+                    main = paste(c(num.transcripts, "contigs"))
+                    , las = 1)
+# save out as 10 x 5
+
 table(dynamicColors) # how many modules were identified and what are the module sizes
 
-#Calc module eigengenes (1st princomp)
-MEList <- moduleEigengenes(datExpr, colors = dynamicColors)
+#### 5.d. Module eigengenes ####
+# Create module eigengenes
+MEList <- moduleEigengenes(datExpr[,restConnectivity], colors = dynamicColors) # may be an issue here, bc dynamic colors is on top 25000 genes
 MEs <- MEList$eigengenes
 
-#Calc module eigengene dissimilarity matrix
+# Calc module eigengene dissimilarity matrix
 MEDiss <- 1-cor(MEs) #dissim
 METree <- hclust(as.dist(MEDiss), method = "average") #cluster
 
-#Plot module eigengene clustering
+# Plot module eigengene clustering
 plot(METree, main = "Clustering of module eigengenes",
      xlab = "", sub = "")
 abline(h=c(0.1,0.2,0.3,0.4), col = c("green", "pink", "blue", "red")) #add level of correlation for cutoff
 MEDissThres = 0.25 # 0.25 is suggested level from WGCNA Tutorial
 abline(h=MEDissThres, col = "green") # Plot the cut line into the dendrogram
 
-#Merge eigengenes
+# Merge eigengenes
 # top genes:
 merge <- mergeCloseModules(datExpr[,restConnectivity], dynamicColors, cutHeight = MEDissThres, verbose = 3)
-merge <- mergeCloseModules(datExpr, dynamicColors, cutHeight = MEDissThres, verbose = 3)
+# merge <- mergeCloseModules(datExpr, dynamicColors, cutHeight = MEDissThres, verbose = 3) # SAME ISSUE AS ABOVE
 mergedColors <- merge$colors # merged module colors
 mergedMEs <- merge$newMEs # merged module eigengenes
 
@@ -314,12 +325,13 @@ plotDendroAndColors(hierTOM, cbind(dynamicColors, mergedColors),
                     c("Dynamic Tree Cut", "Merged dynamic"),
                     dendroLabels = FALSE, hang = 0.03,
                     addGuide = TRUE, guideHang = 0.05,
-                    main=paste(nGenes,"contigs - merge at",1-MEDissThres))
+                    main=paste(num.transcripts,"contigs - merge at",1-MEDissThres))
+# save out as 10 x 5
 
 table(mergedColors) # after merging, how many modules remain and with how many genes
 
 
-
+##### HERE TODAY #####
 
 ######## END SELECT ONLY MOST CONNECTED CONTIGS #######
 
