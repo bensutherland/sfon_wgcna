@@ -388,54 +388,79 @@ labeledHeatmap(Matrix = moduleTraitCor,
 # Per gene/trait combo, Gene Significance *GS* = |cor| b/w  ***gene and trait***
 # Per gene/module combo, Module Membership *MM* = cor b/w ***gene and module eigengene***
 
-# Identify and separate trait(s) of interest
+#### 8.a. Identify trait(s) of interest ####
 names(datTraits) # Define variable osmo.delta containing the osmo.delta column of datTrait
 TOI.names <- c("weight.g_0709", "sp.growth.rateT1.T3", "condit.fact_T2", "hep.som.ind"
                , "cort.delta", "osmo.delta", "chlor.delta", "fem.egg.diam")
 
+# Create data.frame of traits of interest
 TOI = as.data.frame(datTraits[TOI.names])
 dim(TOI)
 
-modNames <- substring(names(MEs), 3) # obtain names (colors) of the modules
+# Obtain names of modules
+modNames <- substring(names(mergedMEs), 3) 
 
-#Module Membership
-geneModuleMembership <- as.data.frame(cor(datExpr, MEs, use = "p")) #correlate gene with module (MM)
+
+#### 8.b. Calculate Module Membership (gene vs eigengene) ####
+geneModuleMembership <- as.data.frame(cor(datExpr[,restConnectivity], mergedMEs, use = "p")) #correlate gene with module (MM)
 MMPvalue <- as.data.frame(corPvalueStudent(as.matrix(geneModuleMembership), nSamples)) #p-val for MM
-names(geneModuleMembership) = paste("MM", modNames, sep="") #adds names to dataframe
-names(MMPvalue) = paste("p.MM", modNames, sep="") #adds names to dataframe
 
-#Gene Significance (for interesting traits)
-geneTraitSignificance <- as.data.frame(cor(datExpr, TOI, use = "p"))
+# Add names to each dataframe above
+names(geneModuleMembership) = paste("MM", modNames, sep="")
+names(MMPvalue) = paste("p.MM", modNames, sep="")
+
+# These are large datasets
+dim(geneModuleMembership)
+dim(MMPvalue)
+
+
+#### 8.c. Calculate Gene Significance (for TOIs) ####
+geneTraitSignificance <- as.data.frame(cor(datExpr[,restConnectivity], TOI, use = "p"))
 GSPvalue = as.data.frame(corPvalueStudent(as.matrix(geneTraitSignificance), nSamples))
+
+# Add names to each dataframe above
 names(geneTraitSignificance) = paste("GS.", names(TOI), sep="")
 names(GSPvalue) = paste("p.GS.", names(TOI), sep="")
 
-########3C INTRAMODULAR ANALYSIS: GENES W HIGH GS & MM ####
-# As an example, we look at the 'white' module that has the highest association with 'osmo.delta' 
-module = "white"
+# These are large datasets
+dim(geneTraitSignificance)
+dim(GSPvalue)
+
+
+#### 8.d. Summarize intramodular analysis (genes w/ high GS and MM)
+# Currently, this is performed per module/trait
+
+names(mergedMEs)
+names(TOI)
+
+# For example consider
+# note, ME is not present in names, and traits have GS. to start
+module = "lightblue4"
 trait = "GS.osmo.delta"
-column <- match(module, modNames) #column index for the module of interest
-column2 <- match(trait, names(geneTraitSignificance)) #column index for trait of interest
-moduleGenes <- mergedColors==module #indexes genes that are in the module of interest
+column <- match(module, modNames) # Index for the module of interest
+column2 <- match(trait, names(geneTraitSignificance)) # Index for trait of interest
+moduleGenes <- mergedColors==module # Index which genes in module of interest
 
 # Plot MM by GS to see the correlation
 par(mfrow = c(1,1))
 verboseScatterplot(abs(geneModuleMembership[moduleGenes, column]),
                    abs(geneTraitSignificance[moduleGenes, column2]),
-                   xlab = paste("Module Membership in", module, "module"),
-                   ylab = "Gene significance for osmo.delta",
+                   xlab = paste("Module Membership in ", module, " module", sep = ""),
+                   ylab = paste("Gene significance for ", trait, " trait", sep = ""),
                    main = paste("Module membership vs. gene significance\n"),
                    cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = "black")
-#Clearly, GS and MM are highly correlated
-# Genes highly signif. assoc. w a trait oft also most 
-#  important (central) elements of modules assoc with trait
 
-########3D SUMMARY AND OUTPUT (ANNOTATION OF RESULTS) ####
-#Merge info on modules assoc. w trait of interest (e.g. central genes MM)
+# GS and MM are related
+# Theory: Genes highly w/ high GS (gene/trait) oft most important (central) elements of modules assoc with trait
+
+
+#### 8.d. Output ####
+# Merge info on modules assoc. w trait of interest (e.g. central genes MM)
 # with gene annotation and write out
 
 # read in annotation file
-head(names(datExpr)[mergedColors=="white"]) #just those probes in the module of interest
+head(names(datExpr)[mergedColors==module]) #just those probes in the module of interest
+length(names(datExpr)[mergedColors==module]) #just those probes in the module of interest
 
 annot = read.table(file = "/Users/wayne/Documents/bernatchez/Sfon_projects/Sfon-transcriptome/annotating_transcriptome/sfontinalis_contigs_annotation_report_v1.0_shortform.txt",
                    sep = "\t", header = TRUE)
