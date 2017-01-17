@@ -203,7 +203,7 @@ plotDendroAndColors(sampleTree2, traitColors,
                     #abCol = "red"
                     )
 
-
+#### 5. Generate Clusters ####
 #### 5.a Determine soft-thresh power (Network Topol) ####
 # not necessary to re-run after determining best B (soft-thresholding power)
 powers = c(1:10, seq(from = 12, to=20, by=2)) # Choose a set of soft-thresholding powers
@@ -236,10 +236,9 @@ powers = c(1:10, seq(from = 12, to=20, by=2)) # Choose a set of soft-thresholdin
 
 beta1=6 # If using signed network, double the beta1
 
-
-#### SAVE POINT ####
 # save.image(file = "02_input_data/sfon_wgcna_save_point_step5.RData")
 # load("02_input_data/sfon_wgcna_save_point_step5.RData")
+
 
 #### 5.b. Optional: select only most connected contigs ####
 # Characterize connectivity by checking adjacency of all contigs
@@ -298,26 +297,27 @@ plotDendroAndColors(hierTOM, dynamicColors, "Dynamic Tree Cut",
 
 table(dynamicColors) # how many modules were identified and what are the module sizes
 
-#### 5.d. Module eigengenes ####
+#### 6. Generate module eigengenes ####
+#### 6.a. Create and cluster module eigengenes ####
 # Create module eigengenes
-MEList <- moduleEigengenes(datExpr[,restConnectivity], colors = dynamicColors) # may be an issue here, bc dynamic colors is on top 25000 genes
+MEList <- moduleEigengenes(datExpr[,restConnectivity], colors = dynamicColors)
 MEs <- MEList$eigengenes
 
-# Calc module eigengene dissimilarity matrix
+# Calculate dissimilarity between module eigengenes
 MEDiss <- 1-cor(MEs) #dissim
+
+# Cluster module eigengenes
 METree <- hclust(as.dist(MEDiss), method = "average") #cluster
 
-# Plot module eigengene clustering
+# Plot clusters of module eigengenes
 plot(METree, main = "Clustering of module eigengenes",
      xlab = "", sub = "")
 abline(h=c(0.1,0.2,0.3,0.4), col = c("green", "pink", "blue", "red")) #add level of correlation for cutoff
-MEDissThres = 0.25 # 0.25 is suggested level from WGCNA Tutorial
+MEDissThres = 0.25 # note: 0.25 is suggested level from WGCNA Tutorial
 abline(h=MEDissThres, col = "green") # Plot the cut line into the dendrogram
 
-# Merge eigengenes
-# top genes:
+#### 6.b. Merge module eigengenes ####
 merge <- mergeCloseModules(datExpr[,restConnectivity], dynamicColors, cutHeight = MEDissThres, verbose = 3)
-# merge <- mergeCloseModules(datExpr, dynamicColors, cutHeight = MEDissThres, verbose = 3) # SAME ISSUE AS ABOVE
 mergedColors <- merge$colors # merged module colors
 mergedMEs <- merge$newMEs # merged module eigengenes
 
@@ -330,46 +330,46 @@ plotDendroAndColors(hierTOM, cbind(dynamicColors, mergedColors),
 
 table(mergedColors) # after merging, how many modules remain and with how many genes
 
-save.image(file = "02_input_data/sfon_wgcna_save_point_step8.Rdata")
+# save.image(file = "02_input_data/sfon_wgcna_save_point_step8.Rdata")
 
-
-
-#### FRONTLINE #####
-
-########2C CORRELATE MODULE EIGENGENES WITH EACH OTHER####
+#### 6.c. Correlate module eigengenes
 names(mergedMEs)
-datMEs <- mergedMEs #rename to use in the following
+datMEs <- mergedMEs # datMEs contains module eigengenes' values for each sample
 
-#datMEs contains module eigengenes for each sample
-# currently assuming that the order of the samples is the same as:
+# This assumes the order of the samples is the same as
 rownames(datExpr)
 
-#####TEMP ####
-##### EQTL OUTPUT ######
+## Export eigengene values e.g. for eQTL of modules
 eigengenes.output <- datMEs
 rownames(eigengenes.output) <- rownames(datExpr)
 dim(eigengenes.output)
-write.csv(x = eigengenes.output, file = "eigengenes.output.10cpm.femclean.csv")
-?write.csv
+write.csv(x = eigengenes.output, file = "04_results/eigengenes_output_fem_mat.csv")
 
+# Measure dissimilarity b/w module eigengenes (here as a signed correlation)
+dissimME <- 1-(t(cor(datMEs, method="pearson")))/2   # spearman is optional if want to try non-parametric
 
-
-
-# Dissimilarity measure bw module eigengenes (signed correlation)
-dissimME <- 1-(t(cor(datMEs, method="pearson")))/2   #could use spearman if want to try non-parametric
+# Cluster based on dissimilarity of module eigengenes
 hclustdatME <- hclust(as.dist(dissimME), method="average")
+
+# Plot
 par(mfrow=c(1,1))
 plot(hclustdatME, main="Clustering tree based on the module eigengenes")
 
-########3A CORRELATE MODULE EIGENGENES WITH TRAITS ####
-moduleTraitCor <- cor(mergedMEs, datTraits, use = "p"); #use=p =pairwise.complete.obs; method for computing covariances in the presence of missing values
-moduleTraitPvalue = corPvalueStudent(moduleTraitCor, nSamples); #calculates Student asymptotic p-value for given correlations (no MTC)
+#### 7.a. Correlate module eigengenes w/ traits and plot ####
+# calculate correlation
+moduleTraitCor <- cor(mergedMEs, datTraits, use = "p") # p = pairwise.complete.obs (compute in presence of missing values)
+# pairwise.complete.obs calcs cor bw ea pair of variables using all complete pairs of obs on those variables
 
+# calculate p-value for correlation
+moduleTraitPvalue = corPvalueStudent(moduleTraitCor, nSamples) #calculates Student asymptotic p-value for given correlations (no MTC)
+
+# Collect results into a matrix for plotting
 textMatrix = paste(signif(moduleTraitCor, 2), "\n(",
                    signif(moduleTraitPvalue, 1), ")", sep = "")
 dim(textMatrix) <- dim(moduleTraitCor) #give dimensions of textMatrix
-par(mar = c(4, 7, 3, 3))
-# Display the correlation values within a heatmap plot
+
+# Plot the correlation values in a heatmap plot
+par(mar = c(7, 10, 3, 3))
 labeledHeatmap(Matrix = moduleTraitCor,
                xLabels = names(datTraits),
                yLabels = names(MEs),
@@ -382,8 +382,10 @@ labeledHeatmap(Matrix = moduleTraitCor,
                zlim = c(-1,1),
                main = paste("Module-trait relationships"))
 
-########3B CORRELATE GENE TO TRAIT AND KEY MODULES (gene sig & mod memb) ####
-# Per gene, define Gene Significance *GS* as: the |corr| bw the ***gene and the trait***
+# fem.mat, 25 modules, 27 traits save out as 10 x 9
+
+#### 8 Calculate module membership and gene significance ####
+# Per gene, Gene Significance *GS* = the |cor| b/w the ***gene and the trait***
 # Per gene[module], define Module Membership *MM* as: the corr bw the ***gx profile and the module eigengene***
 
 # identify and separate trait(s) of interest
