@@ -39,3 +39,4 @@ z-*
 *.pdf
 .Rhistory
 *.csv
+*.DS_Store
