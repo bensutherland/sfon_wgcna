@@ -97,6 +97,9 @@ dim(datExpr0.male) # 53 indiv, no parent
 ## female, mature
 datExpr0 <- datExpr0.fem.mat
 
+## male 
+datExpr0 <- datExpr0.male
+
 # Note: Will need to do some filtering similar to the following 
 # (remember, at log2), and cpm thresh was 0.5, so log2(0.5)
 
@@ -127,6 +130,8 @@ hist(expressed.tally
      , ylab = "Num. transcripts in bin"
      , las = 1) 
 
+# save out as 5 x 4
+
 # Filter by low expression
 datExpr0.filt <- datExpr0[ ,keep.genes]
 dim(datExpr0.filt)
@@ -144,12 +149,18 @@ par(mfrow=c(1,1), mar = c(0,4,2,0), cex = 0.6)
 sampleTree <- hclust(dist(datExpr0), method = "average") # default dist metric = euclidean; hclust agglomeration is "average"
 plot(sampleTree, main = "Sample clustering to detect outliers", sub="", xlab="", cex.lab = 1.5,
      cex.axis = 1.5, cex.main = 2)
-# For mature females, 3 main clusters, outlier having large livers
-# To improve resolution on trends unrelated to the outlier cluster (i.e. liver weight), cut the tree.
 
-# Remove Outliers
-cutline <- 200 # choose height at which to cut
+# For mature females, 3 main clusters, outlier having large livers
+# For males, 2 potential outliers, lib69 and lib37
+
+# To improve resolution on trends unrelated to the outlier cluster (i.e. liver weight), cut the tree.
+# Set cutline for males or females
+cutline <- 200 # choose height at which to cut (females)
+
+# cutline <- 180 # for males
 abline(h = cutline, col = "red") # add to plot
+
+# Save out as 8.5 x 4.5
 
 clust = cutreeStatic(sampleTree, cutHeight = cutline, minSize = 10)
 table(clust) # clust 1 contains the samples we want to keep
@@ -159,13 +170,20 @@ nGenes = ncol(datExpr)
 nSamples = nrow(datExpr)
 
 
+# At this point, if working with males save the object to be used as the comparison test set for module conservation
+# datExpr0.male.low.expr.filt <- datExpr
+
 #### 4.a. Incorporate trait data ####
 # Input trait data, and remove unneeded columns
 traitData <- files.df
 dim(traitData)
 colnames(traitData)
-traits.to.remove <- c(3:5,7,8:10,14,26:27,30,41:45)
-colnames(traitData[, -c(traits.to.remove)]) # these are the phenos to remove
+
+# Choose phenotypes for females or males
+traits.to.remove <- c(3:5,7,8:10,14,26:27,30,41:45) # female
+# traits.to.remove <- c(3:5,7,8:10,14,26:27,30,40:41,43,45) # male
+
+colnames(traitData[, -c(traits.to.remove)]) # these are the phenos being kept
 allTraits <- traitData[, -c(traits.to.remove)] # remove unneeded columns
 
 # Dataframe w/ clinical traits to match expr data
@@ -177,14 +195,15 @@ datTraits <- datTraits[,-c(1:2)] # remove file names and lib names
 rownames(datTraits)
 collectGarbage()
 
+# reduce name size for datExpr
+rownames(datExpr) <- sub('.*\\.', '', x = rownames(datExpr)) 
+# this works by searching '.*' one or more characters, followed by a dot '\\.' (\\ is escape), this will match until the last . char in the string.
+
 
 # Recap:
 # expr data is 'datExpr'
 # trait data is 'datTraits'
 
-# reduce name size for datExpr
-rownames(datExpr) <- sub('.*\\.', '', x = rownames(datExpr)) 
-# this works by searching '.*' one or more characters, followed by a dot '\\.' (\\ is escape), this will match until the last . char in the string.
 
 #### 4.b. Re-cluster after rem outliers ####
 sampleTree2 = hclust(dist(datExpr), method = "average")
@@ -202,6 +221,7 @@ plotDendroAndColors(sampleTree2, traitColors,
                     #abHeight = 180,
                     #abCol = "red"
                     )
+# save as 9 x 7
 
 #### 5. Generate Clusters ####
 #### 5.a Determine soft-thresh power (Network Topol) ####
@@ -316,6 +336,8 @@ abline(h=c(0.1,0.2,0.3,0.4), col = c("green", "pink", "blue", "red")) #add level
 MEDissThres = 0.25 # note: 0.25 is suggested level from WGCNA Tutorial
 abline(h=MEDissThres, col = "green") # Plot the cut line into the dendrogram
 
+# save as 8 x 5
+
 #### 6.b. Merge module eigengenes ####
 merge <- mergeCloseModules(datExpr[,restConnectivity], dynamicColors, cutHeight = MEDissThres, verbose = 3)
 mergedColors <- merge$colors # merged module colors
@@ -343,7 +365,10 @@ rownames(datExpr)
 eigengenes.output <- datMEs
 rownames(eigengenes.output) <- rownames(datExpr)
 dim(eigengenes.output)
-write.csv(x = eigengenes.output, file = "04_results/eigengenes_output_fem_mat.csv")
+
+# write.csv(x = eigengenes.output, file = "04_results/eigengenes_output_fem_mat.csv")
+# write.csv(x = eigengenes.output, file = "04_results/eigengenes_output_male.csv")
+
 
 # Measure dissimilarity b/w module eigengenes (here as a signed correlation)
 dissimME <- 1-(t(cor(datMEs, method="pearson")))/2   # spearman is optional if want to try non-parametric
@@ -354,6 +379,8 @@ hclustdatME <- hclust(as.dist(dissimME), method="average")
 # Plot
 par(mfrow=c(1,1))
 plot(hclustdatME, main="Clustering tree based on the module eigengenes")
+
+# save out as 8 x 5
 
 #### 7.a. Correlate module eigengenes w/ traits and plot ####
 # calculate correlation
@@ -383,6 +410,7 @@ labeledHeatmap(Matrix = moduleTraitCor,
                main = paste("Module-trait relationships"))
 
 # fem.mat, 25 modules, 27 traits save out as 10 x 9
+# male, 27 modules, 28 traits save out as 10 x 9
 
 #### 8 Calculate module membership and gene significance ####
 # Per gene/trait combo, Gene Significance *GS* = |cor| b/w  ***gene and trait***
@@ -390,8 +418,15 @@ labeledHeatmap(Matrix = moduleTraitCor,
 
 #### 8.a. Identify trait(s) of interest ####
 names(datTraits) # Define variable osmo.delta containing the osmo.delta column of datTrait
+
+# female
 TOI.names <- c("weight.g_0709", "sp.growth.rateT1.T3", "condit.fact_T2", "hep.som.ind"
                , "cort.delta", "osmo.delta", "chlor.delta", "fem.egg.diam")
+# male
+TOI.names <- c("weight.g_0709", "sp.growth.rateT1.T3", "condit.fact_T2", "hep.som.ind"
+               , "cort.delta", "osmo.delta", "chlor.delta", "male.sperm.conc", "male.sperm.diam")
+
+
 
 # Create data.frame of traits of interest
 TOI = as.data.frame(datTraits[TOI.names])
@@ -427,16 +462,22 @@ dim(geneTraitSignificance)
 dim(GSPvalue)
 
 
-#### 8.d. Summarize intramodular analysis (genes w/ high GS and MM)
-# Currently, this is performed per module/trait
+#### 8.d. Compare GS and MM for selected module/trait combinations
 
 names(mergedMEs)
 names(TOI)
 
 # For example consider
 # note, ME is not present in names, and traits have GS. to start
-module = "lightblue4"
+
+# female
+module = "MElightblue4"
 trait = "GS.osmo.delta"
+
+# male
+module = "lightyellow"
+trait = "GS.osmo.delta"
+
 column <- match(module, modNames) # Index for the module of interest
 column2 <- match(trait, names(geneTraitSignificance)) # Index for trait of interest
 moduleGenes <- mergedColors==module # Index which genes in module of interest
@@ -481,103 +522,52 @@ geneInfo0 = data.frame(transcript_id = probes,
                        geneModuleMembership,
                        MMPvalue)
 
+# Write out results (female)
+write.csv(geneInfo0, file = "04_results/geneInfo0_fem_mat.csv")
 
-# write out results
-write.csv(geneInfo0, file = "geneInfo0.csv")
+# Write out results (male)
+write.csv(geneInfo0, file = "04_results/geneInfo0_male.csv")
 
-########4 DIFFERENTIAL NETWORK ANALYSIS########
-########4A MALE EXPRESSION DATA INPUT #######
-# use the same files.df file as above, but select only males
-mal.files <- files.df$file.name[files.df$sex==1 & files.df$matur==1]
-mal.files <- mal.files[!is.na(mal.files)] # this removes parents
-posit.mal.files <- which(files.df$file.name %in% mal.files)
-mal.files.df <- files.df[posit.mal.files,]
-dim(mal.files.df)
 
-# Read in the normalized data (cols = samples, rows = contigs)
-# Input male-specific filtered and normalized genes:
-sfeqtl <- read.csv(file="/Users/wayne/Documents/bernatchez/Sfon_projects/SfeQ/02-RNA-Seq_analysis/07_gx_levels-may25-15/log2.outcpm.mal_only-cpm5_in25.csv")
-dim(sfeqtl)
-head(sfeqtl[1:5,1:5])
-str(sfeqtl[1:5,1:5]) #confirm variables are numeric
+#### 9. Other sex WGCNA analysis ####
+# First to redo all steps using male, return to step 2.b and proceed through to here again
 
-datExpr0 = as.data.frame(t(sfeqtl[, -c(1)])) #remove auxillary data and transpose (excluding contigs)
-names(datExpr0) = sfeqtl[,1] #provide contig IDs as colnames
-head(datExpr0[1:5,1:5])
+#### 10. Differential network analysis ####
+# data is:
+files.retain.fem.mat
+files.retain.male
 
-# Subset to keep the required male expression data
-datExpr0.mal <- datExpr0[mal.files,]
-dim(datExpr0.mal)
-head(datExpr0.mal[1:5,1:5])
+#### 10.a. Calculate module preservation ####
+dim(datExpr0.fem.mat) #rows = samples, cols = genes
+dim(datExpr0.male.low.expr.filt)
 
-# Replace the long form row.names with short form (libID)
-posit.mal.files <- which(mal.files.df$file.name %in% mal.files)
-rownames(datExpr0.mal) <- mal.files.df$lib.ID[posit.mal.files]
-head(datExpr0.mal[1:5,1:5])
 
-#########4B MALE Expression data checking#####
-gsg = goodSamplesGenes(datExpr0.mal, verbose = 3)
-gsg$allOK #see tutorial if not true
-
-# plot samples to detect outliers
-par(mfrow=c(1,1))
-sampleTree.mal <- hclust(dist(datExpr0.mal), method = "average") # default dist metric = euclidean; hclust agglomeration is "average"
-par(mar = c(0,4,2,0), cex = 0.6)
-plot(sampleTree.mal, main = "Sample clustering to detect outliers", sub="", xlab="", cex.lab = 1.5,
-     cex.axis = 1.5, cex.main = 2)
-#definitely an odd sample 69, cut at 100
-
-## To improve resolution on trends unrelated to the outlier cluster (i.e. liver weight), cut the tree.
-cutline <- 100 # choose height at which to cut
-abline(h = cutline, col = "red") # add to plot
-clust = cutreeStatic(sampleTree.mal, cutHeight = cutline, minSize = 10)
-table(clust) # clust 1 contains the samples we want to keep
-keepSamples = (clust==1)
-datExpr.mal = datExpr0.mal[keepSamples, ] # subset the expression data to only keep samples in the main group
-nGenes = ncol(datExpr.mal)
-nSamples = nrow(datExpr.mal)
-
-# expression without outliers is now in datExpr.mal
-
-##########4C MALE TRAIT DATA#######
-# can use the original 'allTraits' object as this contais all samples
-names(allTraits)
-
-# Form a dataframe analogous to expression data that will hold the clinical traits.
-libSamples = rownames(datExpr.mal)
-traitRows = match(libSamples, allTraits$lib.ID); #matches sample names! perfect
-datTraits.mal = allTraits[traitRows, -1] #collect traits for required samples, remove sample names
-rownames(datTraits.mal) = allTraits[traitRows, 1]; #add sample names as row-names
-rownames(datTraits.mal)
-collectGarbage()
-
-# Post-outlier removal, Re-cluster samples
-sampleTree2 = hclust(dist(datExpr.mal), method = "average") 
-datTraits.mal.trimmed <- datTraits.mal[,-29] # has trouble with the NAs in the egg category 
-#ISSUE HERE ##### NEED TO RETAIN THE SPERM VALUES####
-traitColors = numbers2colors(datTraits.mal.trimmed, signed = F) # Use color to represent trait values (white = low; red = high; grey = NA)
-# Plot the sample dendrogram and the colors underneath.
-plotDendroAndColors(sampleTree2, traitColors,
-                    groupLabels = names(datTraits.mal),
-                    main = "Sample dendrogram and trait heatmap")
-
-##  expr data is 'datExpr.mal'
-#   trait data is 'datTraits.mal'
-
-#########4D CALCULATION OF MODULE PRESERVATION#######
-dim(datExpr.mal) #rows = samples, cols = genes
-dim(datTraits.mal)
-
-# in the tutorial, the gene names agree in the two sets, but is not necessary
-# here, we will automatically ignore gene names that cannot be matched across datasets
+# Old Notes, may not still be conducted..
+# In the tutorial, the gene names agree in the two sets, but is not necessary
+# Here, we will automatically ignore gene names that cannot be matched across datasets
 # but make sure at least half the genes in each module are in common bw ref and test
 
+
 #set up the multi-set expression data and corresponding module colors
+# As the female data contains the reference modules, carry forward the analysis of the 25000 most connected genes
+# and use this as the input
+datExpr0.fem.mat.top25000 <- datExpr0[,restConnectivity] # restConnectivity gives only top connected, #datExpr0 gives only QC filtered samples
+
 setLabels = c("Female", "Male")
-multiExpr = list(Female = list(data = datExpr), Male = list(data = datExpr.mal))
+multiExpr = list(Female = list(data = datExpr0.fem.mat.top25000), Male = list(data = datExpr0.male.low.expr.filt))
+# note: currently male is not filtered on low expression specifically (was filtered with females)
+
+goodSamplesGenes(datExpr0.fem.mat.top25000)
+goodSamplesGenes(datExpr0.male.low.expr.filt)
+
 multiColor = list(Female = mergedColors)
+
+# Test for module preservation
 ?modulePreservation
-#For each reference-test pair, the function only uses genes (columns of the data component of each component of multiExpr) that are in common between the reference and test set. Columns are matched by column names, so column names must be valid.
+# For each reference-test pair, the function only uses genes 
+# that are in common between the reference and test set. 
+# Columns are matched by column names, so column names must be valid.
+
 system.time( {
   mp = modulePreservation(multiExpr, multiColor,
                           referenceNetworks = 1,
@@ -588,7 +578,7 @@ system.time( {
 } )
 
 
-save(mp, file = "modulePreservation.RData")
+save(mp, file = "04_results/modulePreservation.RData")
 
 ########4E Analyze and Display module Preservation Results#####
 #load(file = "modulePreservation.RData")
