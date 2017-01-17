@@ -482,25 +482,6 @@ geneInfo0 = data.frame(transcript_id = probes,
                        MMPvalue)
 
 
-# to be removed, seems sketchy:
-# # experimental
-# osmo.delta <- datTraits$osmo.delta
-# 
-# # order modules by their significance for osmo.delta
-# modOrder = order(-abs(cor(MEs, osmo.delta, use = "p")))
-# 
-# # add in module membership information in the above order
-# for (mod in 1:ncol(geneModuleMembership))
-# {
-#   oldNames = names(geneInfo0)
-#   geneInfo0 = data.frame(geneInfo0, geneModuleMembership[, modOrder[mod]],
-#                          MMPvalue[, modOrder[mod]]);
-#   names(geneInfo0) = c(oldNames, paste("MM.", modNames[modOrder[mod]], sep=""),
-#                        paste("p.MM.", modNames[modOrder[mod]], sep=""))
-# }
-# 
-# dim(geneInfo0)
-
 # write out results
 write.csv(geneInfo0, file = "geneInfo0.csv")
 
