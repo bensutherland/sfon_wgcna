@@ -372,8 +372,8 @@ dim(textMatrix) <- dim(moduleTraitCor) #give dimensions of textMatrix
 par(mar = c(7, 10, 3, 3))
 labeledHeatmap(Matrix = moduleTraitCor,
                xLabels = names(datTraits),
-               yLabels = names(MEs),
-               ySymbols = names(MEs),
+               yLabels = names(mergedMEs),
+               ySymbols = names(mergedMEs),
                colorLabels = FALSE,
                colors = blueWhiteRed(50),
                textMatrix = textMatrix,
@@ -385,12 +385,16 @@ labeledHeatmap(Matrix = moduleTraitCor,
 # fem.mat, 25 modules, 27 traits save out as 10 x 9
 
 #### 8 Calculate module membership and gene significance ####
-# Per gene, Gene Significance *GS* = the |cor| b/w the ***gene and the trait***
-# Per gene[module], define Module Membership *MM* as: the corr bw the ***gx profile and the module eigengene***
+# Per gene/trait combo, Gene Significance *GS* = |cor| b/w  ***gene and trait***
+# Per gene/module combo, Module Membership *MM* = cor b/w ***gene and module eigengene***
 
-# identify and separate trait(s) of interest
+# Identify and separate trait(s) of interest
 names(datTraits) # Define variable osmo.delta containing the osmo.delta column of datTrait
-TOI = as.data.frame(datTraits[c(8, 19, 22, 25)])
+TOI.names <- c("weight.g_0709", "sp.growth.rateT1.T3", "condit.fact_T2", "hep.som.ind"
+               , "cort.delta", "osmo.delta", "chlor.delta", "fem.egg.diam")
+
+TOI = as.data.frame(datTraits[TOI.names])
+dim(TOI)
 
 modNames <- substring(names(MEs), 3) # obtain names (colors) of the modules
 
