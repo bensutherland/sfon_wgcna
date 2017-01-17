@@ -331,73 +331,10 @@ plotDendroAndColors(hierTOM, cbind(dynamicColors, mergedColors),
 table(mergedColors) # after merging, how many modules remain and with how many genes
 
 save.image(file = "02_input_data/sfon_wgcna_save_point_step8.Rdata")
-##### HERE TODAY #####
-
-######## END SELECT ONLY MOST CONNECTED CONTIGS #######
-
-#need this one
-MEList <- moduleEigengenes(datExpr[,restConnectivity], colors = dynamicColors)
 
 
 
-
-
-########2B1 COEXPR SIMILARITY AND ADJ ####
-#Transform adjacency to Topological Overlap Matrix (TOM) to minimize noise and spurious associations
-# and then calculate the corresponding dissimilarity
-beta1=5 #remember, if using signed network to double the beta1
-
-#First calculate adjacency for all contigs
-ADJ = adjacency(datExpr,power=beta1, type="unsigned") #for an unsigned network
-gc()
-#Second, turn adjacency to dissimilarity (topological overlap matrix) by subtracting the adjacency from 1
-dissTOM=TOMdist(ADJ)
-gc()
-#Third, hierarchical clustering using TOM matrix
-hierTOM = hclust(as.dist(dissTOM), method="average")
-
-#Cut the tree to produce modules (dynamically)
-colorh1 <- cutreeDynamic(hierTOM, cutHeight = NULL, minClusterSize = 50)
-dynamicColors = labels2colors(colorh1) # Convert numeric lables into colors
-
-# Plot the dendrogram with module colors
-plotDendroAndColors(hierTOM, dynamicColors, "Dynamic Tree Cut",
-                    dendroLabels = FALSE, hang = 0.03,
-                    addGuide = TRUE, guideHang = 0.05,
-                    main = paste(c(nGenes, "contigs")))
-table(dynamicColors) # how many modules were identified and what are the module sizes
-length(table(dynamicColors))
-
-########2B2 MERGE SIM MODULES AND SUMMARIZE####
-#Calc module eigengenes (1st princomp)
-MEList <- moduleEigengenes(datExpr, colors = dynamicColors)
-MEs <- MEList$eigengenes
-
-#Calc module eigengene dissimilarity matrix
-MEDiss <- 1-cor(MEs) #dissim
-METree <- hclust(as.dist(MEDiss), method = "average") #cluster
-
-#Plot module eigengene clustering
-plot(METree, main = "Clustering of module eigengenes",
-     xlab = "", sub = "")
-#abline(h=c(0.1,0.2,0.3,0.4), col = c("green", "pink", "blue", "red")) #add level of correlation for cutoff
-MEDissThres = 0.25 # 0.25 is suggested level from WGCNA Tutorial
-abline(h=MEDissThres, col = "green") # Plot the cut line into the dendrogram
-
-#Merge eigengenes
-# top genes:
-#merge <- mergeCloseModules(datExpr[,restConnectivity], dynamicColors, cutHeight = MEDissThres, verbose = 3)
-merge <- mergeCloseModules(datExpr, dynamicColors, cutHeight = MEDissThres, verbose = 3)
-mergedColors <- merge$colors # merged module colors
-mergedMEs <- merge$newMEs # merged module eigengenes
-
-plotDendroAndColors(hierTOM, cbind(dynamicColors, mergedColors),
-                    c("Dynamic Tree Cut", "Merged dynamic"),
-                    dendroLabels = FALSE, hang = 0.03,
-                    addGuide = TRUE, guideHang = 0.05,
-                    main=paste(nGenes,"contigs - merge at",1-MEDissThres))
-
-table(mergedColors) # after merging, how many modules remain and with how many genes
+#### FRONTLINE #####
 
 ########2C CORRELATE MODULE EIGENGENES WITH EACH OTHER####
 names(mergedMEs)
