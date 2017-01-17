@@ -455,46 +455,51 @@ verboseScatterplot(abs(geneModuleMembership[moduleGenes, column]),
 
 
 #### 8.d. Output ####
-# Merge info on modules assoc. w trait of interest (e.g. central genes MM)
-# with gene annotation and write out
-
-# read in annotation file
+# Merge info on modules assoc. w trait of interest (e.g. central genes MM) with gene annotation and write out
 head(names(datExpr)[mergedColors==module]) #just those probes in the module of interest
 length(names(datExpr)[mergedColors==module]) #just those probes in the module of interest
 
-annot = read.table(file = "/Users/wayne/Documents/bernatchez/Sfon_projects/Sfon-transcriptome/annotating_transcriptome/sfontinalis_contigs_annotation_report_v1.0_shortform.txt",
+# Read in annotation file
+annot = read.table(file = "02_input_data/sfontinalis_contigs_annotation_report_v1.0_shortform.txt",
                    sep = "\t", header = TRUE)
 head(annot)
 dim(annot)
 
-# identify probes to annotate
-probes = names(datExpr)
-probes2annot = match(probes, annot$transcript_id) #informs on the positions of the probe in the annotation file
+# Identify probes to annotate
+probes = names(datExpr[,restConnectivity])
+probes2annot = match(probes, annot$transcript_id) # Index position of probe in annot. file
 sum(is.na(probes2annot)) #number of contigs not present in the annotation file
+# note that we are currently getting one that is not annotatable, because it is not a real probe "__too_low_aQual" -- should remove these earlier
+tail(probes)
 
-# populate dataframe with key information for all probes
+# Populate dataframe with key information for all probes
 geneInfo0 = data.frame(transcript_id = probes,
                        uniprot_id = annot$sprot_Top_BLASTX_hit[probes2annot],
                        moduleColor = mergedColors,
                        geneTraitSignificance,
-                       GSPvalue)
+                       GSPvalue,
+                       geneModuleMembership,
+                       MMPvalue)
 
-osmo.delta <- datTraits$osmo.delta
 
-# order modules by their significance for osmo.delta
-modOrder = order(-abs(cor(MEs, osmo.delta, use = "p")))
-
-# add in module membership information in the above order
-for (mod in 1:ncol(geneModuleMembership))
-{
-  oldNames = names(geneInfo0)
-  geneInfo0 = data.frame(geneInfo0, geneModuleMembership[, modOrder[mod]],
-                         MMPvalue[, modOrder[mod]]);
-  names(geneInfo0) = c(oldNames, paste("MM.", modNames[modOrder[mod]], sep=""),
-                       paste("p.MM.", modNames[modOrder[mod]], sep=""))
-}
-
-dim(geneInfo0)
+# to be removed, seems sketchy:
+# # experimental
+# osmo.delta <- datTraits$osmo.delta
+# 
+# # order modules by their significance for osmo.delta
+# modOrder = order(-abs(cor(MEs, osmo.delta, use = "p")))
+# 
+# # add in module membership information in the above order
+# for (mod in 1:ncol(geneModuleMembership))
+# {
+#   oldNames = names(geneInfo0)
+#   geneInfo0 = data.frame(geneInfo0, geneModuleMembership[, modOrder[mod]],
+#                          MMPvalue[, modOrder[mod]]);
+#   names(geneInfo0) = c(oldNames, paste("MM.", modNames[modOrder[mod]], sep=""),
+#                        paste("p.MM.", modNames[modOrder[mod]], sep=""))
+# }
+# 
+# dim(geneInfo0)
 
 # write out results
 write.csv(geneInfo0, file = "geneInfo0.csv")
