@@ -32,10 +32,10 @@ z-*
 *.fastq.gz
 *.fastq
 *~
-.Rproj.user
+*.Rproj*
 *.Rdata
 *.temp
-02_raw_data/*.txt
+02_input_data/*.txt
 *.pdf
 .Rhistory
 *.csv
