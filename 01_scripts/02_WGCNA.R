@@ -533,6 +533,9 @@ write.csv(geneInfo0, file = "04_results/geneInfo0_male.csv")
 # First to redo all steps using male, return to step 2.b and proceed through to here again
 
 #### 10. Differential network analysis ####
+# Much of this analysis comes from the tutorial found:
+# https://labs.genetics.ucla.edu/horvath/CoexpressionNetwork/ModulePreservation/Tutorials/
+
 # data is:
 files.retain.fem.mat
 files.retain.male
@@ -579,51 +582,60 @@ system.time( {
 
 
 save(mp, file = "04_results/modulePreservation.RData")
+## reload object
+# load(file = "04_results/modulePreservation.RData")
 
-########4E Analyze and Display module Preservation Results#####
-#load(file = "modulePreservation.RData")
-# isolate the observed statistics and their Z scores
+#### 10.b. Analyze and visualize module preservation ####
+# Isolate obs stats & Z scores
 ref = 1
 test = 2
 statsObs = cbind(mp$quality$observed[[ref]][[test]][, -1], mp$preservation$observed[[ref]][[test]][, -1])
-statsZ = cbind(mp$quality$Z[[ref]][[test]][, -1], mp$preservation$Z[[ref]][[test]][, -1]);
+statsZ = cbind(mp$quality$Z[[ref]][[test]][, -1], mp$preservation$Z[[ref]][[test]][, -1])
+
+# Isolate mod labels and sizes
+modColors <- rownames(mp$preservation$observed[[ref]][[test]])
+moduleSizes <- mp$preservation$Z[[ref]][[test]][, 1] # These cap at 1000? Why? #issue# #todo# (also in tutorial)
+
 # Compare preservation to quality:
 print( cbind(statsObs[, c("medianRank.pres", "medianRank.qual")],
              signif(statsZ[, c("Zsummary.pres", "Zsummary.qual")], 2)) )
 
-# plot the preservation medianRank and Zsummary for the female modules as a function of module size
-
-# Module labels and module sizes are also contained in the results
-modColors <- rownames(mp$preservation$observed[[ref]][[test]])
-moduleSizes <- mp$preservation$Z[[ref]][[test]][, 1] # Why are these capping at 1000? is it just coincidence...??
-# leave grey and gold modules out
-plotMods <- !(modColors %in% c("grey", "gold"))
-# Text labels for points
-text = modColors[plotMods]
-# Auxiliary convenience variable
+# Set up plot of MedianRank.pres (preservation) & Zsummary.pres for fem mods ~ mod size
+plotMods <- !(modColors %in% c("grey", "gold")) # Do not include grey and gold modules
+text = modColors[plotMods] # Text labels for points
+# For ease of plotting, set up aux variable
 plotData = cbind(mp$preservation$observed[[ref]][[test]][, 2], mp$preservation$Z[[ref]][[test]][, 2])
 # Main titles for the plot
 mains = c("Preservation Median rank", "Preservation Zsummary");
 
+# Plot
 par(mfrow = c(1,2), mar = c(4.5,4.5,2.5,1))
 for (p in 1:2)
 {
   min = min(plotData[, p], na.rm = TRUE);
   max = max(plotData[, p], na.rm = TRUE);
-  # Adjust ploting ranges appropriately
+  # Adjust plotting ranges appropriately
   if (p==2)
   {
     if (min > -max/10) min = -max/10
     ylim = c(min - 0.1 * (max-min), max + 0.1 * (max-min))
   } else
     ylim = c(max + 0.1 * (max-min), min - 0.1 * (max-min))
-  plot(moduleSizes[plotMods], plotData[plotMods, p], col = 1, bg = modColors[plotMods], pch = 21,
+  plot(moduleSizes[plotMods], plotData[plotMods, p],
+       col = 1, bg = modColors[plotMods], pch = 21,
        main = mains[p],
        cex = 2.4,
        ylab = mains[p], xlab = "Module size", log = "x",
        ylim = ylim,
-       xlim = c(10, 2000), cex.lab = 1.2, cex.axis = 1.2, cex.main =1.4)
-  labelPoints(moduleSizes[plotMods], plotData[plotMods, p], text, cex = 1, offs = 0.08);
+       xlim = c(10, 7000), cex.lab = 1.2, cex.axis = 1.2, cex.main =1.4
+       , las = 1)
+  
+  # labeling points does not work with standard tutorial, for first panel
+  # option with text labels
+  text(x = moduleSizes[plotMods], y = plotData[plotMods, p], labels = text, cex = 0.7, adj = -0.08)
+  # option with number labels
+  #labelPoints(moduleSizes[plotMods], plotData[plotMods, p], text, cex = 1, offs = 0.08)
+  
   # For Zsummary, add threshold lines
   if (p==2) {
     abline(h=0)
@@ -631,34 +643,12 @@ for (p in 1:2)
     abline(h=10, col = "darkgreen", lty = 2)
   } }
 
-#THERE IS SOMETHING WRONG HERE BECAUSE MY TEXT AREN'T SHOWING UP
-
-#without loop
-par(mfrow = c(1,2), mar = c(4.5,4.5,2.5,1))
-plot(moduleSizes[plotMods], plotData[plotMods, 1], col = 1, bg = modColors[plotMods], pch = 21,
-       main = mains[1],
-       cex = 2.4,
-       ylab = mains[1], xlab = "Module size", log = "x",
-       ylim = c(0,15),
-       xlim = c(10, 2000), cex.lab = 1.2, cex.axis = 1.2, cex.main =1.4)
-labelPoints(moduleSizes[plotMods], plotData[plotMods, 1], text, cex = 1, offs = 0.08);
-
-plot(moduleSizes[plotMods], plotData[plotMods, 2], col = 2, bg = modColors[plotMods], pch = 21,
-     main = mains[2],
-     cex = 2.4,
-     ylab = mains[2], xlab = "Module size", log = "x",
-     ylim = c(0,40),
-     xlim = c(10, 2000), cex.lab = 1.2, cex.axis = 1.2, cex.main =1.4)
-labelPoints(moduleSizes[plotMods], plotData[plotMods, 2], text, cex = 1, offs = 0.08);
-# For Zsummary, add threshold lines
-abline(h=0)
-abline(h=2, col = "blue", lty = 2)
-abline(h=10, col = "darkgreen", lty = 2)
+# save out as 10 x 6
 
 
-#Closer inspection of the modules with low preservation may indicate that the 
-# module was driven by outlier sample (see Supplementary Text S5) in Langfelder et al 2011
+# Note: There is info in tutorial to inspect whether some modules are driven by outlier samples
 
+#### 10.c. Plot other statistics in one plot ####
 #now plot the density and connectivity statistics all in one plot
 
 # Re-initialize module color labels and sizes
