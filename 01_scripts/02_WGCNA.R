@@ -649,17 +649,25 @@ for (p in 1:2)
 # Note: There is info in tutorial to inspect whether some modules are driven by outlier samples
 
 #### 10.c. Plot other statistics in one plot ####
-#now plot the density and connectivity statistics all in one plot
+# Density and connectivity statistics
 
 # Re-initialize module color labels and sizes
 modColors = rownames(statsZ)
-moduleSizes = mp$quality$Z[[ref]][[test]][, 1];
+moduleSizes = mp$quality$Z[[ref]][[test]][, 1]
+
 # Exclude improper modules
 plotMods = !(modColors %in% c("grey", "gold"));
+
 # Create numeric labels for each module
-labs = match(modColors[plotMods], standardColors(50));
-par(mfrow = c(4,5), mar = c(3,3,2,1), mgp = c(1.6, 0.4, 0))
+nums2match <- seq(1:length(modColors[plotMods]))
+cols2match <- modColors[plotMods]
+nums.cols.df <- as.data.frame(cbind(nums2match, cols2match))
+labs <- nums.cols.df$nums2match
+
+#labs = match(modColors[plotMods], standardColors(50)) # not working, not all cols are in there
+
 # Plot each Z statistic in a separate plot.
+par(mfrow = c(4,5), mar = c(3,3,2,1), mgp = c(1.6, 0.4, 0))
 for (s in 1:ncol(statsZ))
 {
   min = min(statsZ[plotMods, s], na.rm = TRUE);
@@ -670,17 +678,31 @@ for (s in 1:ncol(statsZ))
        cex = 1.7,
        ylab = colnames(statsZ)[s], xlab = "Module size", log = "x",
        ylim = c(min - 0.1 * (max-min), max + 0.1 * (max-min)),
-       xlim = c(20, 1000))
-  labelPoints(moduleSizes[plotMods], statsZ[plotMods, s], labs, cex = 0.7, offs = 0.04);
+       xlim = c(20, 2000),
+       las = 1)
+  text(x = moduleSizes[plotMods], y = statsZ[plotMods, s], labels = labs, cex = 0.8
+       , adj = 0
+       )
+  #labelPoints(moduleSizes[plotMods], statsZ[plotMods, s], labs, cex = 0.7, offs = 0.04);
   abline(h=0)
   abline(h=2, col = "blue", lty = 2)
   abline(h=10, col = "darkgreen", lty = 2)
 }
 
-data.frame(color = modColors[plotMods], label = labs)
+# Panel for number and color codes:
+plot(x = c(0,10), y = c(0, 10), type = "n"
+     , xaxt = 'n'
+     , yaxt = 'n'
+     , ylab = ""
+     , xlab = "Number / Color Key")
+cex.legend <- 0.35
 
+# one legend
+legend(x = "center", y = "center"
+       , legend = paste(nums.cols.df$nums2match, nums.cols.df$cols2match, sep = " ")
+       , fill = nums.cols.df$cols2match, cex = cex.legend
+       , ncol = 2
+       , bty="n"
+       , x.intersp=0.4)
 
-
-
-
-
+# save out as 12 x 10
