@@ -98,7 +98,7 @@ dim(datExpr0.male) # 53 indiv, no parent
 datExpr0 <- datExpr0.fem.mat
 
 ## male 
-datExpr0 <- datExpr0.male
+# datExpr0 <- datExpr0.male
 
 # Note: Will need to do some filtering similar to the following 
 # (remember, at log2), and cpm thresh was 0.5, so log2(0.5)
@@ -138,6 +138,21 @@ dim(datExpr0.filt)
 
 # Replace orignal object with filtered
 datExpr0 <- datExpr0.filt
+
+# save out as background for GO enrichment
+background <- datExpr0
+annot = read.table(file = "02_input_data/sfontinalis_contigs_annotation_report_v1.0_shortform.txt",
+                   sep = "\t", header = TRUE)
+probes <- names(datExpr0)
+probes2annot <- match(probes, annot$transcript_id) # Index position of probe in annot. file
+sum(is.na(probes2annot)) #number of contigs not present in the annotation file
+tail(probes)
+background <- data.frame(transcript_id = probes,
+                         uniprot_id = annot$sprot_Top_BLASTX_hit[probes2annot])
+head(background)
+
+# save out background
+write.csv(x = datExpr0, file = "04_results/background_genes_fem_mat.csv")
 
 
 #### 3. Data Quality Control ####
