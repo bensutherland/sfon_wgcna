@@ -16,7 +16,9 @@ require("edgeR")
 
 # Set working directory
 setwd("~/Documents/bernatchez/01_Sfon_projects/04_Sfon_eQTL/sfon_wgcna")
-# setwd("~/Documents/sfon_wgcna/") # macpro
+
+# macpro
+# setwd("~/Documents/sfon_wgcna/")
 
 #### 1 Import interp file and data ####
 # Important setup for loading expression data
@@ -34,6 +36,11 @@ enableWGCNAThreads(nThreads = 2)
 # Create data.frame
 files.df <- as.data.frame(interp)
 names(files.df)
+str(files.df)
+
+# # fix naming issue in interp
+# interp$file.name <- gsub(interp$file.name, pattern = "_trimmed.fastq.gz.bam_htseq_counts.trim.txt", replacement = "")
+# head(files.df$file.name)
 
 # There were some issues with the sex of individuals in the interp file, but it looks like those samples are not in this set
 files.df$fish.id[files.df$male.sperm.conc != "NA" & files.df$sex == "F"]
