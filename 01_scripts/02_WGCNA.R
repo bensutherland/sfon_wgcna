@@ -14,6 +14,12 @@ require("edgeR")
 
 # Note, the current analysis begins with female data that excludes immature females and large liver weight females, b/c manual says reduce variation and rem. outliers
 
+# Issues:
+# 1) stringsAsFactors seems to keep defaulting to TRUE, BUT this is probably bc it was introduced in edgeR script..
+
+
+
+
 # Set working directory
 setwd("~/Documents/bernatchez/01_Sfon_projects/04_Sfon_eQTL/sfon_wgcna")
 
@@ -33,18 +39,42 @@ enableWGCNAThreads(nThreads = 2)
 
 ### End front matter ###
 
-# Create data.frame
-files.df <- as.data.frame(interp)
-names(files.df)
+### Add Arctic Charr to interp and species column
+AC.names <- colnames(normalized.output.log2)[105:122] #contains AC names
+str(interp)
+
+length(colnames(interp))-1 # number phenotypes
+length(AC.names) # number of Arctic Charr to add
+18*44
+
+
+interp.addition <- as.data.frame(matrix(data = c(AC.names, rep("NA", times = 792))
+                , nrow=18, ncol=45))
+
+str(interp.addition)
+colnames(interp.addition) <- colnames(interp) # make matching column names
+
+interp.w.AC <- rbind2(x = interp, y = interp.addition)
+
+# Create species column
+species <- c(rep("Sfon", times = length(interp[,1]))
+                 , rep("Salp", times = length(interp.addition[,1])))
+interp.final <- cbind(interp.w.AC, species)
+
+#### Create data.frame ####
+files.df <- data.frame(interp.final,stringsAsFactors = F)
+#names(files.df)
+str(files.df)
+files.df$sex <- as.character(files.df$sex)
+files.df$matur <- as.character(files.df$matur)
 str(files.df)
 
-# # fix naming issue in interp
-# interp$file.name <- gsub(interp$file.name, pattern = "_trimmed.fastq.gz.bam_htseq_counts.trim.txt", replacement = "")
-# head(files.df$file.name)
-
-# There were some issues with the sex of individuals in the interp file, but it looks like those samples are not in this set
-files.df$fish.id[files.df$male.sperm.conc != "NA" & files.df$sex == "F"]
-files.df$fish.id[files.df$fem.egg.diam != "NA" & files.df$sex == "M"]
+# # Check for discrepencies in interp
+# # There were some issues with the sex of individuals in the interp file, 
+# # but it looks like those samples are not in this set,
+# # because all the below are NA
+# files.df$fish.id[files.df$male.sperm.conc != "NA" & files.df$sex == "F"]
+# files.df$fish.id[files.df$fem.egg.diam != "NA" & files.df$sex == "M"]
 
 # Recode sex as binary
 head(files.df[,c("sex","matur")])
@@ -57,6 +87,8 @@ files.df$matur[files.df$matur=="-"] <- 0
 files.df$matur[files.df$matur=="+"] <- 1
 files.df$matur <- as.numeric(files.df$matur)
 head(files.df[,c("sex","matur")])
+
+
 
 # Make object with expression data
 sfeqtl <- normalized.output.log2 # (cols = samples, rows = contigs)
@@ -75,34 +107,55 @@ datExpr0.bck <- datExpr0
 
 
 #### 2.a. Create subsets of data (samples) ####
-# Change files.df$file.name to match the short form name
-files.df$file.name <- gsub(x = files.df$file.name, pattern = ".txt", replacement = "")
-head(files.df$file.name)
-
 #females (all, not parent)
-files.df$fish.id[files.df$sex == "0" & files.df$fish.id != "F2F"] # Show fish.id, no parent
-files.retain.fem <- files.df$file.name[files.df$sex == "0" & files.df$fish.id != "F2F"] # get filenames for subset
+### ISSUE ###
+# files.retain.fem <- files.df$fish.id[files.df$sex == "0" & files.df$fish.id != "F2F" 
+#                  & files.df$fish.id != "NA"] # Show fish.id, no parent, no AC
+
+### TESTING ###
+files.retain.fem <- files.df$file.name[files.df$sex == "0" & files.df$fish.id != "F2F" 
+                                     & files.df$fish.id != "NA"] # Show fish.id, no parent, no AC
 files.retain.fem
 datExpr0.fem <- datExpr0[files.retain.fem, ]
 dim(datExpr0.fem) # 47 indiv, no parent
 rownames(datExpr0.fem)
 
-#females (only mature)
-files.df$fish.id[files.df$sex == "0" & files.df$matur == 1 & files.df$fish.id != "F2F"] # Show fish.id, no parent
-files.retain.fem.mat <- files.df$file.name[files.df$sex == "0" & files.df$matur == 1 & files.df$fish.id != "F2F"]  # get filenames for subset
-datExpr0.fem.mat <- datExpr0[files.retain.fem.mat,]
-dim(datExpr0.fem.mat) # 41 indiv, no parents
-rownames(datExpr0.fem.mat)
+### ANNOTATION OF ISSUE ###
+# first, we were using fish.id to identify the proper rows rather than file id, for some wierd reason
+# second, we need to be careful because datExpr0 gets re-written with something else, so to go back
+# you need to use 'To go back' above.
+## NEED TO UPDATE README
 
-#males (maturity all same)
-files.df$fish.id[files.df$sex == "1" & files.df$fish.id != "F2M"] # Show fish.id, no parent
-files.retain.male <- files.df$file.name[files.df$sex == "1" & files.df$fish.id != "F2M"] # get filenames for subset
-datExpr0.male <- datExpr0[files.retain.male, ]
-dim(datExpr0.male) # 53 indiv, no parent
+#### need to fix below
+# #females (only mature)
+# files.retain.fem.mat <- files.df$fish.id[files.df$sex == "0" & files.df$matur == 1 & files.df$fish.id != "F2F"
+#                  & files.df$fish.id != "NA"] # Show fish.id, no parent, no AC
+# files.retain.fem.mat
+# datExpr0.fem.mat <- datExpr0[files.retain.fem.mat,]
+# dim(datExpr0.fem.mat) # 41 indiv, no parents
+# rownames(datExpr0.fem.mat)
+# 
+# #males (maturity all same)
+# files.retain.male <- files.df$fish.id[files.df$sex == "1" & files.df$fish.id != "F2M"
+#                  & files.df$fish.id != "NA"] # Show fish.id, no parent
+# files.retain.male
+# datExpr0.male <- datExpr0[files.retain.male, ]
+# dim(datExpr0.male) # 53 indiv, no parent
+# 
+# #Arctic Charr (no knowledge on sex)
+# files.retain.AC <- files.df$fish.id[files.df$fish.id == "NA"] # Show fish.id, no parent
+# files.retain.AC
+# datExpr0.AC <- datExpr0[files.retain.AC, ]
+# dim(datExpr0.AC) # 18 indiv
+
 
 #### 2.b. Choose working subset and filter ####
-## female, mature
-datExpr0 <- datExpr0.fem.mat
+
+## female, all
+datExpr0 <- datExpr0.fem
+
+# ## female, mature
+# datExpr0 <- datExpr0.fem.mat
 
 ## male 
 # datExpr0 <- datExpr0.male
@@ -146,20 +199,21 @@ dim(datExpr0.filt)
 # Replace orignal object with filtered
 datExpr0 <- datExpr0.filt
 
-# save out as background for GO enrichment
-background <- datExpr0
-annot = read.table(file = "02_input_data/sfontinalis_contigs_annotation_report_v1.0_shortform.txt",
-                   sep = "\t", header = TRUE)
-probes <- names(datExpr0)
-probes2annot <- match(probes, annot$transcript_id) # Index position of probe in annot. file
-sum(is.na(probes2annot)) #number of contigs not present in the annotation file
-tail(probes)
-background <- data.frame(transcript_id = probes,
-                         uniprot_id = annot$sprot_Top_BLASTX_hit[probes2annot])
-head(background)
-
-# save out background
-write.csv(x = datExpr0, file = "04_results/background_genes_fem_mat.csv")
+#### GO ENRICHMENT OUTPUT ####
+# # save out as background for GO enrichment
+# background <- datExpr0
+# annot = read.table(file = "02_input_data/sfontinalis_contigs_annotation_report_v1.0_shortform.txt",
+#                    sep = "\t", header = TRUE)
+# probes <- names(datExpr0)
+# probes2annot <- match(probes, annot$transcript_id) # Index position of probe in annot. file
+# sum(is.na(probes2annot)) #number of contigs not present in the annotation file
+# tail(probes)
+# background <- data.frame(transcript_id = probes,
+#                          uniprot_id = annot$sprot_Top_BLASTX_hit[probes2annot])
+# head(background)
+# 
+# # save out background
+# write.csv(x = datExpr0, file = "04_results/background_genes_fem_mat.csv")
 
 
 #### 3. Data Quality Control ####
@@ -177,7 +231,7 @@ plot(sampleTree, main = "Sample clustering to detect outliers", sub="", xlab="",
 
 # To improve resolution on trends unrelated to the outlier cluster (i.e. liver weight), cut the tree.
 # Set cutline for males or females
-cutline <- 200 # choose height at which to cut (females)
+cutline <- 350 # choose height at which to cut (females)
 
 # cutline <- 180 # for males
 abline(h = cutline, col = "red") # add to plot
@@ -187,6 +241,7 @@ abline(h = cutline, col = "red") # add to plot
 clust = cutreeStatic(sampleTree, cutHeight = cutline, minSize = 10)
 table(clust) # clust 1 contains the samples we want to keep
 keepSamples = (clust==1)
+
 datExpr = datExpr0[keepSamples, ] # keep only main group
 nGenes = ncol(datExpr)
 nSamples = nrow(datExpr)
@@ -202,13 +257,13 @@ dim(traitData)
 colnames(traitData)
 
 # Choose phenotypes for females or males
-traits.to.remove <- c(3:5,7,8:10,14,26:27,30,41:45) # female
+traits.to.remove <- c(3:5,7,8:10,14,26:27,30,41:45,46) # female
 # traits.to.remove <- c(3:5,7,8:10,14,26:27,30,40:41,43,45) # male
 
-colnames(traitData[, -c(traits.to.remove)]) # these are the phenos being kept
+colnames(traitData[, -c(traits.to.remove)]) # confirm traits to keep
 allTraits <- traitData[, -c(traits.to.remove)] # remove unneeded columns
 
-# Dataframe w/ clinical traits to match expr data
+# Dataframe w/ traits to match expr data
 libSamples = rownames(datExpr)
 traitRows = match(libSamples, allTraits$file.name)
 datTraits = allTraits[traitRows,] #collect traits for required samples
@@ -217,10 +272,21 @@ datTraits <- datTraits[,-c(1:2)] # remove file names and lib names
 rownames(datTraits)
 collectGarbage()
 
+str(datTraits)
+#datTraits.bck <- datTraits
+# datTraits <- datTraits.bck # how to go backwards
+
+# change datTraits to numeric
+for(t in 1:length(datTraits)){
+  datTraits[,t] <- as.numeric(datTraits[,t])
+}
+str(datTraits)
+# OK!
+
 # reduce name size for datExpr
 rownames(datExpr) <- sub('.*\\.', '', x = rownames(datExpr)) 
 # this works by searching '.*' one or more characters, followed by a dot '\\.' (\\ is escape), this will match until the last . char in the string.
-
+rownames(datExpr) <- gsub(x = rownames(datExpr), pattern = "_R1", replacement = "")
 
 # Recap:
 # expr data is 'datExpr'
