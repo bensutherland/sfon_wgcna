@@ -18,10 +18,10 @@ require("edgeR")
 # 1) stringsAsFactors seems to keep defaulting to TRUE, BUT this is probably bc it was introduced in edgeR script..
 
 # Set working directory
-setwd("~/Documents/bernatchez/01_Sfon_projects/04_Sfon_eQTL/sfon_wgcna")
+# setwd("~/Documents/bernatchez/01_Sfon_projects/04_Sfon_eQTL/sfon_wgcna")
 
 # macpro
-# setwd("~/Documents/sfon_wgcna/")
+setwd("~/Documents/sfon_wgcna/")
 
 #### 1 Import interp file and data ####
 # Important setup for loading expression data
@@ -31,8 +31,8 @@ options(stringsAsFactors = FALSE) #IMPORTANT SETTING
 load("02_input_data/sfon_wgcna_01_output.RData")
 
 # Enable parallel processing
-enableWGCNAThreads(nThreads = 2)
-# enableWGCNAThreads(nThreads = 10) #MacPro
+#enableWGCNAThreads(nThreads = 2)
+enableWGCNAThreads(nThreads = 20) #MacPro
 
 ### End front matter ###
 
@@ -337,12 +337,13 @@ powers = c(1:10, seq(from = 12, to=20, by=2)) # Choose a set of soft-thresholdin
 
 # ## Call the network topology analysis function
 # sft = pickSoftThreshold(datExpr, powerVector = powers, verbose = 5
-#                         , networkType = "unsigned"  #default
-#                         )
+#                        , networkType = "unsigned"  #default
+#                        )
+
 # 
 # ## Plot to pick soft threshold power
-# par(mfrow = c(1,2))
-# cex1 = 0.9
+par(mfrow = c(1,2))
+cex1 = 0.9
 # 
 # # Scale-free topology fit index as a function of the soft-thresholding power
 # plot(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],
