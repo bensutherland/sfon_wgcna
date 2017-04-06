@@ -17,9 +17,6 @@ require("edgeR")
 # Issues:
 # 1) stringsAsFactors seems to keep defaulting to TRUE, BUT this is probably bc it was introduced in edgeR script..
 
-
-
-
 # Set working directory
 setwd("~/Documents/bernatchez/01_Sfon_projects/04_Sfon_eQTL/sfon_wgcna")
 
@@ -102,17 +99,24 @@ colnames(datExpr0)[1:4] # genes
 rownames(datExpr0)[1:4] # samples
 
 datExpr0.bck <- datExpr0
-## To go back
+##### To go back ####
 # datExpr0 <- datExpr0.bck
 
 
 #### 2.a. Create subsets of data (samples) ####
+# All Brook Charr individuals
+files.retain.BC <- files.df$file.name[files.df$fish.id != "NA"] # no AC
+files.retain.BC
+datExpr0.BC <- datExpr0[files.retain.BC, ]
+dim(datExpr0.BC) # 47 indiv, no parent
+rownames(datExpr0.BC)
+
 #females (all, not parent)
 ### ISSUE ###
 # files.retain.fem <- files.df$fish.id[files.df$sex == "0" & files.df$fish.id != "F2F" 
 #                  & files.df$fish.id != "NA"] # Show fish.id, no parent, no AC
 
-### TESTING ###
+### FIXED ###
 files.retain.fem <- files.df$file.name[files.df$sex == "0" & files.df$fish.id != "F2F" 
                                      & files.df$fish.id != "NA"] # Show fish.id, no parent, no AC
 files.retain.fem
@@ -151,6 +155,9 @@ rownames(datExpr0.fem)
 
 #### 2.b. Choose working subset and filter ####
 
+## Brook Charr all
+#datExpr0 <- datExpr0.BC
+
 ## female, all
 datExpr0 <- datExpr0.fem
 
@@ -184,6 +191,7 @@ head(keep.genes)
 length(keep.genes)
 
 # Plot the freq of genes for each bin of number samples expressed?
+par(mfrow=c(1,1))
 hist(expressed.tally
      , main = "Transcripts expressed in number samples"
      , xlab = "Num. indiv. expr gene"
@@ -231,7 +239,8 @@ plot(sampleTree, main = "Sample clustering to detect outliers", sub="", xlab="",
 
 # To improve resolution on trends unrelated to the outlier cluster (i.e. liver weight), cut the tree.
 # Set cutline for males or females
-cutline <- 350 # choose height at which to cut (females)
+cutline <- 330 # choose height at which to cut (females)
+# cutline <- 600 # to not cut at all
 
 # cutline <- 180 # for males
 abline(h = cutline, col = "red") # add to plot
@@ -250,29 +259,38 @@ nSamples = nrow(datExpr)
 # At this point, if working with males save the object to be used as the comparison test set for module conservation
 # datExpr0.male.low.expr.filt <- datExpr
 
-#### 4.a. Incorporate trait data ####
+#### 4.a. Incorporate trait data (Sfon) ####
 # Input trait data, and remove unneeded columns
-traitData <- files.df
+traitData <- files.df[files.df$species=="Sfon", ]
 dim(traitData)
 colnames(traitData)
+str(traitData)
 
 # Choose phenotypes for females or males
+# traits.to.remove <- c(3:5,7,8:10,14,26:27,30,41,43,45,46) # Brook Charr all
 traits.to.remove <- c(3:5,7,8:10,14,26:27,30,41:45,46) # female
 # traits.to.remove <- c(3:5,7,8:10,14,26:27,30,40:41,43,45) # male
+
 
 colnames(traitData[, -c(traits.to.remove)]) # confirm traits to keep
 allTraits <- traitData[, -c(traits.to.remove)] # remove unneeded columns
 
+# UNECCESSARY
+# str(allTraits[files.df$fish.id != "NA",])
+# allTraits <- allTraits[files.df$fish.id != "NA",]
+
 # Dataframe w/ traits to match expr data
 libSamples = rownames(datExpr)
-traitRows = match(libSamples, allTraits$file.name)
+traitRows = match(libSamples, allTraits$file.name) # match w/ file names
 datTraits = allTraits[traitRows,] #collect traits for required samples
-rownames(datTraits) <- datTraits[,2] # use lib.ID as row name
+
+rownames(datTraits) <- datTraits[,2] # now use lib.ID as row name
 datTraits <- datTraits[,-c(1:2)] # remove file names and lib names
 rownames(datTraits)
+str(datTraits)
 collectGarbage()
 
-str(datTraits)
+
 #datTraits.bck <- datTraits
 # datTraits <- datTraits.bck # how to go backwards
 
@@ -283,15 +301,16 @@ for(t in 1:length(datTraits)){
 str(datTraits)
 # OK!
 
+# NO LONGER NECESSARY?
 # reduce name size for datExpr
-rownames(datExpr) <- sub('.*\\.', '', x = rownames(datExpr)) 
-# this works by searching '.*' one or more characters, followed by a dot '\\.' (\\ is escape), this will match until the last . char in the string.
-rownames(datExpr) <- gsub(x = rownames(datExpr), pattern = "_R1", replacement = "")
+# rownames(datExpr) <- sub('.*\\.', '', x = rownames(datExpr)) 
+# # this works by searching '.*' one or more characters, followed by a dot '\\.' (\\ is escape), this will match until the last . char in the string.
+# rownames(datExpr) <- gsub(x = rownames(datExpr), pattern = "_R1", replacement = "")
 
 # Recap:
 # expr data is 'datExpr'
 # trait data is 'datTraits'
-
+# and they are matched with lib.id (rownames each)
 
 #### 4.b. Re-cluster after rem outliers ####
 sampleTree2 = hclust(dist(datExpr), method = "average")
@@ -318,8 +337,8 @@ powers = c(1:10, seq(from = 12, to=20, by=2)) # Choose a set of soft-thresholdin
 
 # ## Call the network topology analysis function
 # sft = pickSoftThreshold(datExpr, powerVector = powers, verbose = 5
-#                         , networkType = "unsigned"  #default 
-#                         , ) 
+#                         , networkType = "unsigned"  #default
+#                         )
 # 
 # ## Plot to pick soft threshold power
 # par(mfrow = c(1,2))
