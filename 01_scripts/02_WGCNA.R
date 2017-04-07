@@ -98,7 +98,7 @@ datExpr0 = as.data.frame(t(sfeqtl))
 colnames(datExpr0)[1:4] # genes
 rownames(datExpr0)[1:4] # samples
 
-datExpr0.bck <- datExpr0
+# datExpr0.bck <- datExpr0
 ##### To go back ####
 # datExpr0 <- datExpr0.bck
 
@@ -130,22 +130,14 @@ rownames(datExpr0.fem)
 # you need to use 'To go back' above.
 ## NEED TO UPDATE README
 
-#### need to fix below
-# #females (only mature)
-# files.retain.fem.mat <- files.df$fish.id[files.df$sex == "0" & files.df$matur == 1 & files.df$fish.id != "F2F"
-#                  & files.df$fish.id != "NA"] # Show fish.id, no parent, no AC
-# files.retain.fem.mat
-# datExpr0.fem.mat <- datExpr0[files.retain.fem.mat,]
-# dim(datExpr0.fem.mat) # 41 indiv, no parents
-# rownames(datExpr0.fem.mat)
-# 
 # #males (maturity all same)
-# files.retain.male <- files.df$fish.id[files.df$sex == "1" & files.df$fish.id != "F2M"
-#                  & files.df$fish.id != "NA"] # Show fish.id, no parent
-# files.retain.male
-# datExpr0.male <- datExpr0[files.retain.male, ]
-# dim(datExpr0.male) # 53 indiv, no parent
+files.retain.male <- files.df$file.name[files.df$sex == "1" & files.df$fish.id != "F2M"
+                  & files.df$fish.id != "NA"] # Show file name, no parent
+files.retain.male
+datExpr0.male <- datExpr0[files.retain.male, ]
+dim(datExpr0.male) # 53 indiv, no parent
 # 
+
 # #Arctic Charr (no knowledge on sex)
 # files.retain.AC <- files.df$fish.id[files.df$fish.id == "NA"] # Show fish.id, no parent
 # files.retain.AC
@@ -240,9 +232,9 @@ plot(sampleTree, main = "Sample clustering to detect outliers", sub="", xlab="",
 # To improve resolution on trends unrelated to the outlier cluster (i.e. liver weight), cut the tree.
 # Set cutline for males or females
 cutline <- 330 # choose height at which to cut (females)
-# cutline <- 600 # to not cut at all
+# cutline <- 600 # to not cut at all (include all samples in trait file)
 
-# cutline <- 180 # for males
+# cutline <- 360 # for males
 abline(h = cutline, col = "red") # add to plot
 
 # Save out as 8.5 x 4.5
@@ -255,7 +247,7 @@ datExpr = datExpr0[keepSamples, ] # keep only main group
 nGenes = ncol(datExpr)
 nSamples = nrow(datExpr)
 
-
+#### FOR MALES ####
 # At this point, if working with males save the object to be used as the comparison test set for module conservation
 # datExpr0.male.low.expr.filt <- datExpr
 
@@ -269,7 +261,7 @@ str(traitData)
 # Choose phenotypes for females or males
 # traits.to.remove <- c(3:5,7,8:10,14,26:27,30,41,43,45,46) # Brook Charr all
 traits.to.remove <- c(3:5,7,8:10,14,26:27,30,41:45,46) # female
-# traits.to.remove <- c(3:5,7,8:10,14,26:27,30,40:41,43,45) # male
+# traits.to.remove <- c(3:5,7,8:10,14,26:27,30,40:41,43,45,46) # male
 
 
 colnames(traitData[, -c(traits.to.remove)]) # confirm traits to keep
@@ -648,19 +640,25 @@ write.csv(geneInfo0, file = "04_results/geneInfo0_fem_filt_most_connected_25000.
 
 
 #### 9. Other sex WGCNA analysis ####
-# First to redo all steps using male, return to step 2.b and proceed through to here again
+# First to redo all steps using male, return to step (To go back) and then 2.b and proceed through to here again
 
 #### 10. Differential network analysis ####
 # Much of this analysis comes from the tutorial found:
 # https://labs.genetics.ucla.edu/horvath/CoexpressionNetwork/ModulePreservation/Tutorials/
 
 # data is:
-files.retain.fem.mat
+files.retain.fem
 files.retain.male
 
+
+
+
 #### 10.a. Calculate module preservation ####
-dim(datExpr0.fem.mat) #rows = samples, cols = genes
+dim(datExpr0.fem) #rows = samples, cols = genes
 dim(datExpr0.male.low.expr.filt)
+
+# save out the male low.expr filtered data to re-use later
+save(datExpr0.male.low.expr.filt, file = "02_input_data/datExpr0.male.low.expr.filt")
 
 
 # Old Notes, may not still be conducted..
@@ -669,14 +667,30 @@ dim(datExpr0.male.low.expr.filt)
 # but make sure at least half the genes in each module are in common bw ref and test
 
 
-#set up the multi-set expression data and corresponding module colors
+
+
+#### GO BACK AND RE-OBTAIN datExpr as female
+load(file = "02_input_data/sfon_wgcna_save_point_step8.Rdata")
+# female data
+datExpr.fem <- datExpr
+dim(datExpr.fem) # should be 32 samples
+
+load(file = "02_input_data/datExpr0.male.low.expr.filt")
+datExpr.mal <- datExpr0.male.low.expr.filt
+dim(datExpr.mal) # should be 52 samples, and has all genes
+
+# note, since we loaded the step8 save point (from female), the most connected genes will be from female
+# need to make sure about this however!!!
+
+# set up the multi-set expression data and corresponding module colors
 # As the female data contains the reference modules, carry forward the analysis of the 25000 most connected genes
 # and use this as the input
-datExpr0.fem.mat.top25000 <- datExpr0[,restConnectivity] # restConnectivity gives only top connected, #datExpr0 gives only QC filtered samples
+datExpr0.fem.mat.top25000 <- datExpr.fem[,restConnectivity] # restConnectivity gives only top connected, #datExpr0 gives only QC filtered samples
+dim(datExpr0.fem.mat.top25000)
 
 setLabels = c("Female", "Male")
 multiExpr = list(Female = list(data = datExpr0.fem.mat.top25000), Male = list(data = datExpr0.male.low.expr.filt))
-# note: currently male is not filtered on low expression specifically (was filtered with females)
+# note: currently male is filtered on low expression specifically
 
 goodSamplesGenes(datExpr0.fem.mat.top25000)
 goodSamplesGenes(datExpr0.male.low.expr.filt)
@@ -718,6 +732,11 @@ moduleSizes <- mp$preservation$Z[[ref]][[test]][, 1] # These cap at 1000? Why? #
 print( cbind(statsObs[, c("medianRank.pres", "medianRank.qual")],
              signif(statsZ[, c("Zsummary.pres", "Zsummary.qual")], 2)) )
 
+mod.pres.table <- as.data.frame(cbind(statsObs[, c("medianRank.pres", "medianRank.qual")],
+             signif(statsZ[, c("Zsummary.pres", "Zsummary.qual")], 2)) )
+write.csv(mod.pres.table, file = "04_results/mod_perservation_table.csv")
+
+
 # Set up plot of MedianRank.pres (preservation) & Zsummary.pres for fem mods ~ mod size
 plotMods <- !(modColors %in% c("grey", "gold")) # Do not include grey and gold modules
 text = modColors[plotMods] # Text labels for points
@@ -750,7 +769,9 @@ for (p in 1:2)
   
   # labeling points does not work with standard tutorial, for first panel
   # option with text labels
-  text(x = moduleSizes[plotMods], y = plotData[plotMods, p], labels = text, cex = 0.7, adj = -0.08)
+  text(x = moduleSizes[plotMods], y = plotData[plotMods, p], labels = text, cex = 0.8, adj = -0.08
+  			#, srt = 30 # angle font
+  			)
   # option with number labels
   #labelPoints(moduleSizes[plotMods], plotData[plotMods, p], text, cex = 1, offs = 0.08)
   
@@ -798,8 +819,8 @@ for (s in 1:ncol(statsZ))
        ylim = c(min - 0.1 * (max-min), max + 0.1 * (max-min)),
        xlim = c(20, 2000),
        las = 1)
-  text(x = moduleSizes[plotMods], y = statsZ[plotMods, s], labels = labs, cex = 0.8
-       , adj = 0
+  text(x = moduleSizes[plotMods], y = statsZ[plotMods, s], labels = labs, cex = 1.3
+       , adj = 1.5
        )
   #labelPoints(moduleSizes[plotMods], statsZ[plotMods, s], labs, cex = 0.7, offs = 0.04);
   abline(h=0)
@@ -813,7 +834,7 @@ plot(x = c(0,10), y = c(0, 10), type = "n"
      , yaxt = 'n'
      , ylab = ""
      , xlab = "Number / Color Key")
-cex.legend <- 0.35
+cex.legend <- 1.0
 
 # one legend
 legend(x = "center", y = "center"
@@ -824,3 +845,7 @@ legend(x = "center", y = "center"
        , x.intersp=0.4)
 
 # save out as 12 x 10
+
+save.image(file = "02_input_data/completed_step10.RData")
+
+
