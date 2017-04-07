@@ -402,6 +402,7 @@ gc()
 
 # Compute the topological overlap matrix based on the adjacency matrix.
 dissTOM=TOMdist(ADJ) # default is "unsigned"
+save(dissTOM, file ="dissTOM_goes_w_step7")
 gc()
 
 # Hierarchical cluster the TOM matrix
@@ -424,6 +425,8 @@ plotDendroAndColors(hierTOM, dynamicColors, "Dynamic Tree Cut",
 # save out as 10 x 5
 
 table(dynamicColors) # how many modules were identified and what are the module sizes
+unmerged_modules_counts <- as.data.frame(table(dynamicColors)) # how many modules were identified and what are the module sizes
+write.csv(unmerged_modules_counts, file = "04_results/unmerged_modules_counts_fem_filt.csv")
 
 #### 6. Generate module eigengenes ####
 #### 6.a. Create and cluster module eigengenes ####
@@ -440,9 +443,9 @@ METree <- hclust(as.dist(MEDiss), method = "average") #cluster
 # Plot clusters of module eigengenes
 plot(METree, main = "Clustering of module eigengenes",
      xlab = "", sub = "")
-abline(h=c(0.1,0.2,0.3,0.4), col = c("green", "pink", "blue", "red")) #add level of correlation for cutoff
+abline(h=c(0.1,0.2,0.3,0.4), col = c("red", "orange", "green", "blue")) #add level of correlation for cutoff
 MEDissThres = 0.25 # note: 0.25 is suggested level from WGCNA Tutorial
-abline(h=MEDissThres, col = "green") # Plot the cut line into the dendrogram
+abline(h=MEDissThres, col = "purple") # Plot the cut line into the dendrogram
 
 # save as 8 x 5
 
@@ -459,6 +462,9 @@ plotDendroAndColors(hierTOM, cbind(dynamicColors, mergedColors),
 # save out as 10 x 5
 
 table(mergedColors) # after merging, how many modules remain and with how many genes
+merged_modules_counts <- as.data.frame(table(mergedColors)) # how many modules were identified and what are the module sizes
+write.csv(merged_modules_counts, file = "04_results/merged_modules_counts_0.25_fem_filt.csv")
+
 
 # save.image(file = "02_input_data/sfon_wgcna_save_point_step8.Rdata")
 
@@ -468,13 +474,15 @@ datMEs <- mergedMEs # datMEs contains module eigengenes' values for each sample
 
 # This assumes the order of the samples is the same as
 rownames(datExpr)
+### CONFIRM THIS ###
 
 ## Export eigengene values e.g. for eQTL of modules
 eigengenes.output <- datMEs
 rownames(eigengenes.output) <- rownames(datExpr)
 dim(eigengenes.output)
 
-# write.csv(x = eigengenes.output, file = "04_results/eigengenes_output_fem_mat.csv")
+# save appropriate dataset
+# write.csv(x = eigengenes.output, file = "04_results/eigengenes_output_fem_filt.csv")
 # write.csv(x = eigengenes.output, file = "04_results/eigengenes_output_male.csv")
 
 
@@ -513,7 +521,7 @@ labeledHeatmap(Matrix = moduleTraitCor,
                colors = blueWhiteRed(50),
                textMatrix = textMatrix,
                setStdMargins = FALSE,
-               cex.text = 0.5,
+               cex.text = 0.7,
                zlim = c(-1,1),
                main = paste("Module-trait relationships"))
 
@@ -552,7 +560,7 @@ MMPvalue <- as.data.frame(corPvalueStudent(as.matrix(geneModuleMembership), nSam
 names(geneModuleMembership) = paste("MM", modNames, sep="")
 names(MMPvalue) = paste("p.MM", modNames, sep="")
 
-# These are large datasets
+# These are large datasets, and contain values for each transcript against each eigengene
 dim(geneModuleMembership)
 dim(MMPvalue)
 
@@ -565,7 +573,7 @@ GSPvalue = as.data.frame(corPvalueStudent(as.matrix(geneTraitSignificance), nSam
 names(geneTraitSignificance) = paste("GS.", names(TOI), sep="")
 names(GSPvalue) = paste("p.GS.", names(TOI), sep="")
 
-# These are large datasets
+# These are large datasets, and contain values for each transcript against each trait
 dim(geneTraitSignificance)
 dim(GSPvalue)
 
@@ -576,15 +584,16 @@ names(mergedMEs)
 names(TOI)
 
 # For example consider
-# note, ME is not present in names, and traits have GS. to start
+
+# note, ME is not present in modNames, and traits have GS. to start
 
 # female
-module = "MElightblue4"
-trait = "GS.osmo.delta"
+module = "firebrick4"
+trait = "GS.cort.delta"
 
 # male
-module = "lightyellow"
-trait = "GS.osmo.delta"
+# module = "lightyellow"
+# trait = "GS.osmo.delta"
 
 column <- match(module, modNames) # Index for the module of interest
 column2 <- match(trait, names(geneTraitSignificance)) # Index for trait of interest
@@ -629,12 +638,13 @@ geneInfo0 = data.frame(transcript_id = probes,
                        GSPvalue,
                        geneModuleMembership,
                        MMPvalue)
+dim(geneInfo0)
 
 # Write out results (female)
-write.csv(geneInfo0, file = "04_results/geneInfo0_fem_mat.csv")
+write.csv(geneInfo0, file = "04_results/geneInfo0_fem_filt_most_connected_25000.csv")
 
 # Write out results (male)
-write.csv(geneInfo0, file = "04_results/geneInfo0_male.csv")
+# write.csv(geneInfo0, file = "04_results/geneInfo0_male.csv")
 
 
 #### 9. Other sex WGCNA analysis ####
