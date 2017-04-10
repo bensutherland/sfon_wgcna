@@ -32,7 +32,7 @@ load("02_input_data/sfon_wgcna_01_output.RData")
 
 # Enable parallel processing
 #enableWGCNAThreads(nThreads = 2)
-enableWGCNAThreads(nThreads = 20) #MacPro
+enableWGCNAThreads(nThreads = 10) #MacPro
 
 ### End front matter ###
 
@@ -386,6 +386,7 @@ gc()
 
 ## This should be smaller than the above (4 Gb vs 12 Gb), so re-save out
 # save.image(file = "02_input_data/sfon_wgcna_save_point_step7.RData")
+# load(file = "02_input_data/sfon_wgcna_save_point_step7_MALE.RData") # load male data
 
 
 #### 5.c. Topological overlap matrix (TOM) ####
@@ -395,6 +396,7 @@ gc()
 # Compute the topological overlap matrix based on the adjacency matrix.
 dissTOM=TOMdist(ADJ) # default is "unsigned"
 save(dissTOM, file ="dissTOM_goes_w_step7")
+# save(dissTOM, file ="dissTOM_goes_w_step7_MALES") # for males
 gc()
 
 # Hierarchical cluster the TOM matrix
@@ -419,6 +421,7 @@ plotDendroAndColors(hierTOM, dynamicColors, "Dynamic Tree Cut",
 table(dynamicColors) # how many modules were identified and what are the module sizes
 unmerged_modules_counts <- as.data.frame(table(dynamicColors)) # how many modules were identified and what are the module sizes
 write.csv(unmerged_modules_counts, file = "04_results/unmerged_modules_counts_fem_filt.csv")
+# write.csv(unmerged_modules_counts, file = "04_results/unmerged_modules_counts_male_filt.csv") #MALES
 
 #### 6. Generate module eigengenes ####
 #### 6.a. Create and cluster module eigengenes ####
@@ -456,9 +459,11 @@ plotDendroAndColors(hierTOM, cbind(dynamicColors, mergedColors),
 table(mergedColors) # after merging, how many modules remain and with how many genes
 merged_modules_counts <- as.data.frame(table(mergedColors)) # how many modules were identified and what are the module sizes
 write.csv(merged_modules_counts, file = "04_results/merged_modules_counts_0.25_fem_filt.csv")
+# write.csv(merged_modules_counts, file = "04_results/merged_modules_counts_0.25_male_filt.csv") #MALE
 
 
 # save.image(file = "02_input_data/sfon_wgcna_save_point_step8.Rdata")
+# save.image(file = "02_input_data/sfon_wgcna_save_point_step8_MALE.Rdata") #MALE
 
 #### 6.c. Correlate module eigengenes
 names(mergedMEs)
@@ -475,7 +480,7 @@ dim(eigengenes.output)
 
 # save appropriate dataset
 # write.csv(x = eigengenes.output, file = "04_results/eigengenes_output_fem_filt.csv")
-# write.csv(x = eigengenes.output, file = "04_results/eigengenes_output_male.csv")
+# write.csv(x = eigengenes.output, file = "04_results/eigengenes_output_male_filt.csv")
 
 
 # Measure dissimilarity b/w module eigengenes (here as a signed correlation)
@@ -584,8 +589,8 @@ module = "firebrick4"
 trait = "GS.cort.delta"
 
 # male
-# module = "lightyellow"
-# trait = "GS.osmo.delta"
+module = "steelblue"
+trait = "GS.osmo.delta"
 
 column <- match(module, modNames) # Index for the module of interest
 column2 <- match(trait, names(geneTraitSignificance)) # Index for trait of interest
@@ -632,12 +637,12 @@ geneInfo0 = data.frame(transcript_id = probes,
                        MMPvalue)
 dim(geneInfo0)
 
-# Write out results (female)
-write.csv(geneInfo0, file = "04_results/geneInfo0_fem_filt_most_connected_25000.csv")
+# Write out results
+write.csv(geneInfo0, file = "04_results/geneInfo0_fem_filt_most_connected_25000.csv") # FEMALE
+# write.csv(geneInfo0, file = "04_results/geneInfo0_male_filt_most_connected_25000.csv") # MALE
 
-# Write out results (male)
-# write.csv(geneInfo0, file = "04_results/geneInfo0_male.csv")
-
+#### SAVE OUT COMPLETED MALE DATASET (WITH MODULES GENERATED)
+save.image(file = "02_input_data/sfon_wgcna_save_point_step9_MALE.RData")
 
 #### 9. Other sex WGCNA analysis ####
 # First to redo all steps using male, return to step (To go back) and then 2.b and proceed through to here again
