@@ -31,8 +31,8 @@ options(stringsAsFactors = FALSE) #IMPORTANT SETTING
 load("02_input_data/sfon_wgcna_01_output.RData")
 
 # Enable parallel processing
-#enableWGCNAThreads(nThreads = 2)
-enableWGCNAThreads(nThreads = 10) #MacPro
+enableWGCNAThreads(nThreads = 3) #Wayne
+# enableWGCNAThreads(nThreads = 10) #MacPro
 
 ### End front matter ###
 
@@ -57,6 +57,7 @@ interp.w.AC <- rbind2(x = interp, y = interp.addition)
 species <- c(rep("Sfon", times = length(interp[,1]))
                  , rep("Salp", times = length(interp.addition[,1])))
 interp.final <- cbind(interp.w.AC, species)
+str(interp.final)
 
 #### Create data.frame ####
 files.df <- data.frame(interp.final,stringsAsFactors = F)
@@ -65,13 +66,7 @@ str(files.df)
 files.df$sex <- as.character(files.df$sex)
 files.df$matur <- as.character(files.df$matur)
 str(files.df)
-
-# # Check for discrepencies in interp
-# # There were some issues with the sex of individuals in the interp file, 
-# # but it looks like those samples are not in this set,
-# # because all the below are NA
-# files.df$fish.id[files.df$male.sperm.conc != "NA" & files.df$sex == "F"]
-# files.df$fish.id[files.df$fem.egg.diam != "NA" & files.df$sex == "M"]
+# still all characters...
 
 # Recode sex as binary
 head(files.df[,c("sex","matur")])
@@ -85,6 +80,13 @@ files.df$matur[files.df$matur=="+"] <- 1
 files.df$matur <- as.numeric(files.df$matur)
 head(files.df[,c("sex","matur")])
 
+
+# # Check for discrepencies in interp
+# # There were some issues with the sex of individuals in the interp file, 
+# # but it looks like those samples are not in this set,
+# # because all the below are NA
+# files.df$fish.id[files.df$male.sperm.conc != "NA" & files.df$sex == "F"]
+# files.df$fish.id[files.df$fem.egg.diam != "NA" & files.df$sex == "M"]
 
 
 # Make object with expression data
@@ -138,11 +140,13 @@ datExpr0.male <- datExpr0[files.retain.male, ]
 dim(datExpr0.male) # 53 indiv, no parent
 # 
 
-# #Arctic Charr (no knowledge on sex)
-# files.retain.AC <- files.df$fish.id[files.df$fish.id == "NA"] # Show fish.id, no parent
-# files.retain.AC
-# datExpr0.AC <- datExpr0[files.retain.AC, ]
-# dim(datExpr0.AC) # 18 indiv
+# #Arctic Charr (all males)
+salp.interp <- read.csv("02_input_data/salp_interp_table_2017-04-11.csv")
+AC.names.8deg <- salp.interp$sample[salp.interp$temp=="8"]
+
+files.retain.AC <- AC.names.8deg
+datExpr0.AC <- datExpr0[files.retain.AC, ]
+dim(datExpr0.AC) # 10 indiv
 
 
 #### 2.b. Choose working subset and filter ####
@@ -153,11 +157,11 @@ dim(datExpr0.male) # 53 indiv, no parent
 ## female, all
 datExpr0 <- datExpr0.fem
 
-# ## female, mature
-# datExpr0 <- datExpr0.fem.mat
-
 ## male 
 # datExpr0 <- datExpr0.male
+
+## Arctic Charr 8 degrees
+datExpr0 <- datExpr0.AC
 
 # Note: Will need to do some filtering similar to the following 
 # (remember, at log2), and cpm thresh was 0.5, so log2(0.5)
