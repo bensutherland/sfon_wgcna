@@ -114,23 +114,12 @@ dim(datExpr0.BC) # 47 indiv, no parent
 rownames(datExpr0.BC)
 
 #females (all, not parent)
-### ISSUE ###
-# files.retain.fem <- files.df$fish.id[files.df$sex == "0" & files.df$fish.id != "F2F" 
-#                  & files.df$fish.id != "NA"] # Show fish.id, no parent, no AC
-
-### FIXED ###
 files.retain.fem <- files.df$file.name[files.df$sex == "0" & files.df$fish.id != "F2F" 
                                      & files.df$fish.id != "NA"] # Show fish.id, no parent, no AC
 files.retain.fem
 datExpr0.fem <- datExpr0[files.retain.fem, ]
 dim(datExpr0.fem) # 47 indiv, no parent
 rownames(datExpr0.fem)
-
-### ANNOTATION OF ISSUE ###
-# first, we were using fish.id to identify the proper rows rather than file id, for some wierd reason
-# second, we need to be careful because datExpr0 gets re-written with something else, so to go back
-# you need to use 'To go back' above.
-## NEED TO UPDATE README
 
 # #males (maturity all same)
 files.retain.male <- files.df$file.name[files.df$sex == "1" & files.df$fish.id != "F2M"
@@ -150,7 +139,6 @@ dim(datExpr0.AC) # 10 indiv
 
 
 #### 2.b. Choose working subset and filter ####
-
 ## Brook Charr all
 #datExpr0 <- datExpr0.BC
 
