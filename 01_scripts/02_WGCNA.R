@@ -12,7 +12,8 @@ require("WGCNA")
 #biocLite("edgeR")
 require("edgeR")
 
-# Note, the current analysis begins with female data that excludes immature females and large liver weight females, b/c manual says reduce variation and rem. outliers
+# Note, the current analysis begins with female data that excludes immature females 
+# and large liver weight females, b/c manual says to reduce variation and rem. outliers
 
 # Issues:
 # 1) stringsAsFactors seems to keep defaulting to TRUE, BUT this is probably bc it was introduced in edgeR script..
@@ -21,7 +22,10 @@ require("edgeR")
 # setwd("~/Documents/bernatchez/01_Sfon_projects/04_Sfon_eQTL/sfon_wgcna")
 
 # macpro
-setwd("~/Documents/sfon_wgcna/")
+# setwd("~/Documents/sfon_wgcna/")
+
+# Logan
+setwd("~/Documents/10_bernatchez/01_sfon_eqtl/sfon_wgcna/")
 
 #### 1 Import interp file and data ####
 # Important setup for loading expression data
@@ -31,8 +35,9 @@ options(stringsAsFactors = FALSE) #IMPORTANT SETTING
 load("02_input_data/sfon_wgcna_01_output.RData")
 
 # Enable parallel processing
-enableWGCNAThreads(nThreads = 3) #Wayne
+# enableWGCNAThreads(nThreads = 3) #Wayne
 # enableWGCNAThreads(nThreads = 10) #MacPro
+enableWGCNAThreads(nThreads = 7) # Logan
 
 ### End front matter ###
 
@@ -59,7 +64,7 @@ species <- c(rep("Sfon", times = length(interp[,1]))
 interp.final <- cbind(interp.w.AC, species)
 str(interp.final)
 
-#### Create data.frame ####
+# Create data.frame
 files.df <- data.frame(interp.final,stringsAsFactors = F)
 #names(files.df)
 str(files.df)
@@ -67,6 +72,7 @@ files.df$sex <- as.character(files.df$sex)
 files.df$matur <- as.character(files.df$matur)
 str(files.df)
 # still all characters...
+# this is fixed later in "Incorporate trait data.."
 
 # Recode sex as binary
 head(files.df[,c("sex","matur")])
@@ -100,11 +106,6 @@ datExpr0 = as.data.frame(t(sfeqtl))
 colnames(datExpr0)[1:4] # genes
 rownames(datExpr0)[1:4] # samples
 
-# datExpr0.bck <- datExpr0
-##### To go back ####
-# datExpr0 <- datExpr0.bck
-
-
 #### 2.a. Create subsets of data (samples) ####
 # All Brook Charr individuals
 files.retain.BC <- files.df$file.name[files.df$fish.id != "NA"] # no AC
@@ -137,8 +138,12 @@ files.retain.AC <- AC.names.8deg
 datExpr0.AC <- datExpr0[files.retain.AC, ]
 dim(datExpr0.AC) # 10 indiv
 
+# backup all data before subset
+#datExpr0.bck <- datExpr0
+##### RESTART SUBSET ####
+# datExpr0 <- datExpr0.bck
 
-#### 2.b. Choose working subset and filter ####
+#### 2.b. Choose working subset ####
 ## Brook Charr all
 #datExpr0 <- datExpr0.BC
 
@@ -146,10 +151,10 @@ dim(datExpr0.AC) # 10 indiv
 datExpr0 <- datExpr0.fem
 
 ## male 
-# datExpr0 <- datExpr0.male
+#datExpr0 <- datExpr0.male
 
 ## Arctic Charr 8 degrees
-datExpr0 <- datExpr0.AC
+#datExpr0 <- datExpr0.AC
 
 # Note: Will need to do some filtering similar to the following 
 # (remember, at log2), and cpm thresh was 0.5, so log2(0.5)
@@ -183,6 +188,7 @@ hist(expressed.tally
      , las = 1) 
 
 # save out as 5 x 4
+# transcript_expr_in_num_samples_<sex>.pdf
 
 # Filter by low expression
 datExpr0.filt <- datExpr0[ ,keep.genes]
@@ -223,13 +229,13 @@ plot(sampleTree, main = "Sample clustering to detect outliers", sub="", xlab="",
 
 # To improve resolution on trends unrelated to the outlier cluster (i.e. liver weight), cut the tree.
 # Set cutline for males or females
-cutline <- 330 # choose height at which to cut (females)
-# cutline <- 600 # to not cut at all (include all samples in trait file)
-
+cutline <- 350 # choose height at which to cut (females)
 # cutline <- 360 # for males
+# cutline <- 600 # to not cut at all (include all samples in trait file)
 abline(h = cutline, col = "red") # add to plot
 
 # Save out as 8.5 x 4.5
+# sample_clust_to_detect_outliers_<sex>.pdf
 
 clust = cutreeStatic(sampleTree, cutHeight = cutline, minSize = 10)
 table(clust) # clust 1 contains the samples we want to keep
@@ -259,10 +265,6 @@ traits.to.remove <- c(3:5,7,8:10,14,26:27,30,41:45,46) # female
 colnames(traitData[, -c(traits.to.remove)]) # confirm traits to keep
 allTraits <- traitData[, -c(traits.to.remove)] # remove unneeded columns
 
-# UNECCESSARY
-# str(allTraits[files.df$fish.id != "NA",])
-# allTraits <- allTraits[files.df$fish.id != "NA",]
-
 # Dataframe w/ traits to match expr data
 libSamples = rownames(datExpr)
 traitRows = match(libSamples, allTraits$file.name) # match w/ file names
@@ -274,7 +276,7 @@ rownames(datTraits)
 str(datTraits)
 collectGarbage()
 
-
+## backup datTraits object
 #datTraits.bck <- datTraits
 # datTraits <- datTraits.bck # how to go backwards
 
@@ -283,7 +285,6 @@ for(t in 1:length(datTraits)){
   datTraits[,t] <- as.numeric(datTraits[,t])
 }
 str(datTraits)
-# OK!
 
 # NO LONGER NECESSARY?
 # reduce name size for datExpr
@@ -308,11 +309,13 @@ plotDendroAndColors(sampleTree2, traitColors,
                     #cex.rowText = 0.3,
                     cex.colorLabels = 0.7,
                     #rowTextAlignment = "left",
-                    marAll = c(3,6,1,1),
-                    #abHeight = 180,
+                    marAll = c(3,6,1,1)
+                    #, abHeight = 180,
                     #abCol = "red"
                     )
+
 # save as 9 x 7
+# sample_clust_and_trait_heatmap_<sex>.pdf
 
 #### 5. Generate Clusters ####
 #### 5.a Determine soft-thresh power (Network Topol) ####
