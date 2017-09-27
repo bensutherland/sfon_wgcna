@@ -24,7 +24,7 @@ require("edgeR")
 # macpro
 # setwd("~/Documents/sfon_wgcna/")
 
-# Logan
+# Logan & Xavier
 setwd("~/Documents/10_bernatchez/01_sfon_eqtl/sfon_wgcna/")
 
 #### 1 Import interp file and data ####
@@ -37,7 +37,8 @@ load("02_input_data/sfon_wgcna_01_output.RData")
 # Enable parallel processing
 # enableWGCNAThreads(nThreads = 3) #Wayne
 # enableWGCNAThreads(nThreads = 10) #MacPro
-enableWGCNAThreads(nThreads = 7) # Logan
+# enableWGCNAThreads(nThreads = 7) # Logan
+enableWGCNAThreads(nThreads = 14) # Xavier
 
 ### End front matter ###
 
@@ -412,6 +413,7 @@ plotDendroAndColors(hierTOM, dynamicColors, "Dynamic Tree Cut",
                     main = paste(c(num.transcripts, "contigs"))
                     , las = 1)
 # save out as 10 x 5
+# as plotDendroAndColors_<sex>.pdf
 
 table(dynamicColors) # how many modules were identified and what are the module sizes
 unmerged_modules_counts <- as.data.frame(table(dynamicColors)) # how many modules were identified and what are the module sizes
@@ -438,6 +440,7 @@ MEDissThres = 0.25 # note: 0.25 is suggested level from WGCNA Tutorial
 abline(h=MEDissThres, col = "purple") # Plot the cut line into the dendrogram
 
 # save as 8 x 5
+# as clust_of_mod_eigengenes_and_merge_line_<sex>.pdf
 
 #### 6.b. Merge module eigengenes ####
 merge <- mergeCloseModules(datExpr[,restConnectivity], dynamicColors, cutHeight = MEDissThres, verbose = 3)
@@ -450,6 +453,7 @@ plotDendroAndColors(hierTOM, cbind(dynamicColors, mergedColors),
                     addGuide = TRUE, guideHang = 0.05,
                     main=paste(num.transcripts,"contigs - merge at",1-MEDissThres))
 # save out as 10 x 5
+# as plotDendroAndColors_merged_<sex>.pdf
 
 table(mergedColors) # after merging, how many modules remain and with how many genes
 merged_modules_counts <- as.data.frame(table(mergedColors)) # how many modules were identified and what are the module sizes
@@ -489,6 +493,7 @@ par(mfrow=c(1,1))
 plot(hclustdatME, main="Clustering tree based on the module eigengenes")
 
 # save out as 8 x 5
+# clust_merged_mod_eigengenes_<sex>.pdf
 
 #### 7.a. Correlate module eigengenes w/ traits and plot ####
 # calculate correlation
@@ -519,6 +524,7 @@ labeledHeatmap(Matrix = moduleTraitCor,
 
 # fem.mat, 25 modules, 27 traits save out as 10 x 9
 # male, 27 modules, 28 traits save out as 10 x 9
+# module-trait_rel_<sex>.pdf
 
 #### 8 Calculate module membership and gene significance ####
 # Per gene/trait combo, Gene Significance *GS* = |cor| b/w  ***gene and trait***
@@ -570,44 +576,44 @@ dim(geneTraitSignificance)
 dim(GSPvalue)
 
 
-#### 8.d. Compare GS and MM for selected module/trait combinations
-
-names(mergedMEs)
-names(TOI)
-
-# For example consider
-
-# note, ME is not present in modNames, and traits have GS. to start
-
-# female
-module = "firebrick4"
-trait = "GS.cort.delta"
-
-# male
-module = "steelblue"
-trait = "GS.osmo.delta"
-
-column <- match(module, modNames) # Index for the module of interest
-column2 <- match(trait, names(geneTraitSignificance)) # Index for trait of interest
-moduleGenes <- mergedColors==module # Index which genes in module of interest
-
-# Plot MM by GS to see the correlation
-par(mfrow = c(1,1))
-verboseScatterplot(abs(geneModuleMembership[moduleGenes, column]),
-                   abs(geneTraitSignificance[moduleGenes, column2]),
-                   xlab = paste("Module Membership in ", module, " module", sep = ""),
-                   ylab = paste("Gene significance for ", trait, " trait", sep = ""),
-                   main = paste("Module membership vs. gene significance\n"),
-                   cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = "black")
+# #### 8.d. Compare GS and MM for selected module/trait combinations
+# 
+# names(mergedMEs)
+# names(TOI)
+# 
+# # For example consider
+# 
+# # note, ME is not present in modNames, and traits have GS. to start
+# 
+# # female
+# module = "firebrick4"
+# trait = "GS.cort.delta"
+# 
+# # male
+# module = "steelblue"
+# trait = "GS.osmo.delta"
+# 
+# column <- match(module, modNames) # Index for the module of interest
+# column2 <- match(trait, names(geneTraitSignificance)) # Index for trait of interest
+# moduleGenes <- mergedColors==module # Index which genes in module of interest
+# 
+# # Plot MM by GS to see the correlation
+# par(mfrow = c(1,1))
+# verboseScatterplot(abs(geneModuleMembership[moduleGenes, column]),
+#                    abs(geneTraitSignificance[moduleGenes, column2]),
+#                    xlab = paste("Module Membership in ", module, " module", sep = ""),
+#                    ylab = paste("Gene significance for ", trait, " trait", sep = ""),
+#                    main = paste("Module membership vs. gene significance\n"),
+#                    cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = "black")
 
 # GS and MM are related
 # Theory: Genes highly w/ high GS (gene/trait) oft most important (central) elements of modules assoc with trait
 
 
-#### 8.d. Output ####
-# Merge info on modules assoc. w trait of interest (e.g. central genes MM) with gene annotation and write out
-head(names(datExpr)[mergedColors==module]) #just those probes in the module of interest
-length(names(datExpr)[mergedColors==module]) #just those probes in the module of interest
+# #### 8.d. Output ####
+# # Merge info on modules assoc. w trait of interest (e.g. central genes MM) with gene annotation and write out
+# head(names(datExpr)[mergedColors==module]) #just those probes in the module of interest
+# length(names(datExpr)[mergedColors==module]) #just those probes in the module of interest
 
 # Read in annotation file
 annot = read.table(file = "02_input_data/sfontinalis_contigs_annotation_report_v1.0_shortform.txt",
