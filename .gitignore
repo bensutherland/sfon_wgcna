@@ -41,3 +41,4 @@ z-*
 *.csv
 *.DS_Store
 .Rproj.user
+*.swp
