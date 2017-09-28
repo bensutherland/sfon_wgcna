@@ -179,8 +179,9 @@ cex1 = 0.9
 
 beta1=6 # If using signed network, double the beta1
 
-# save.image(file = "02_input_data/sfon_wgcna_save_point_step5.RData")
-# load("02_input_data/sfon_wgcna_save_point_step5.RData")
+filename <- paste("02_input_data/", REF, "_sfon_wgcna_save_point_step5.RData", sep = "")
+save.image(file = filename)
+# load(filename)
 
 
 #### 5.b. Optional: select only most connected contigs ####
@@ -188,8 +189,9 @@ beta1=6 # If using signed network, double the beta1
 ADJ = adjacency(datExpr,power=beta1, type="unsigned") #for an unsigned network
 #this creates a matrix of gene x genes (Takes a VERY long time, creates large object ADJ)
 
-# save.image(file = "02_input_data/sfon_wgcna_save_point_step6.RData")
-# load("02_input_data/sfon_wgcna_save_point_step6.RData")
+filename <- paste("02_input_data/", REF, "_sfon_wgcna_save_point_step6.RData", sep = "")
+save.image(file = filename)
+# load(filename)
 gc()
 
 #calc the connectivity of each gene
@@ -208,9 +210,9 @@ ADJ = adjacency(datExpr[,restConnectivity], power=beta1, type = "unsigned")
 gc()
 
 ## This should be smaller than the above (4 Gb vs 12 Gb), so re-save out
-# save.image(file = "02_input_data/sfon_wgcna_save_point_step7.RData")
-# load(file = "02_input_data/sfon_wgcna_save_point_step7_MALE.RData") # load male data
-
+filename <- paste("02_input_data/", REF, "_sfon_wgcna_save_point_step7.RData", sep = "")
+save.image(file = filename)
+# load(filename)
 
 #### 5.c. Topological overlap matrix (TOM) ####
 # minimize noise and spurious associations by transforming adjacency to Topological Overlap Matrix
@@ -292,7 +294,10 @@ dev.off()
 table(mergedColors) # after merging, how many modules remain and with how many genes
 merged_modules_counts <- as.data.frame(table(mergedColors)) # how many modules were identified and what are the module sizes
 # write.csv(merged_modules_counts, file = "04_results/merged_modules_counts_0.25_fem_filt.csv")
-# save.image(file = "02_input_data/sfon_wgcna_save_point_step8.Rdata")
+
+filename <- paste("02_input_data/", REF, "_sfon_wgcna_save_point_step8.RData", sep = "")
+save.image(file = filename)
+# load(filename)
 
 #### 6.c. Correlate module eigengenes
 names(mergedMEs)
@@ -694,4 +699,6 @@ legend(x = "center", y = "center"
 
 dev.off()
 
-# save.image(file = "02_input_data/completed_step10.RData")
+filename <- paste("02_input_data/", REF, "_sfon_wgcna_save_point_step10.RData", sep = "")
+save.image(file = filename)
+# load(filename)
