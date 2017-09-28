@@ -568,9 +568,10 @@ system.time( {
 } )
 
 
-# save(mp, file = "04_results/modulePreservation.RData")
+filename <- paste("04_results/", REF, "_module_preservation_in_", SEC, ".RData", sep = "")
+save(mp, file = filename)
 ## reload object
-# load(file = "04_results/modulePreservation.RData")
+# load(file = filename)
 
 #### 10.c. Analyze and visualize module preservation ####
 # Isolate obs stats & Z scores
