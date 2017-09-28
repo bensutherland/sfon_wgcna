@@ -248,7 +248,9 @@ dev.off()
 
 table(dynamicColors) # how many modules were identified and what are the module sizes
 unmerged_modules_counts <- as.data.frame(table(dynamicColors)) # how many modules were identified and what are the module sizes
-# write.csv(unmerged_modules_counts, file = "04_results/unmerged_modules_counts_fem_filt.csv")
+
+filename <- paste("04_results/", REF, "_unmerged_module_counts_filt.csv", sep = "")
+write.csv(unmerged_modules_counts, file = filename)
 
 #### 6. Generate module eigengenes ####
 #### 6.a. Create and cluster module eigengenes ####
@@ -293,7 +295,9 @@ dev.off()
 
 table(mergedColors) # after merging, how many modules remain and with how many genes
 merged_modules_counts <- as.data.frame(table(mergedColors)) # how many modules were identified and what are the module sizes
-# write.csv(merged_modules_counts, file = "04_results/merged_modules_counts_0.25_fem_filt.csv")
+
+filename <- paste("04_results/", REF, "_merged_module_counts_filt.csv", sep = "")
+write.csv(merged_modules_counts, file = filename)
 
 filename <- paste("02_input_data/", REF, "_sfon_wgcna_save_point_step8.RData", sep = "")
 save.image(file = filename)
@@ -313,7 +317,8 @@ rownames(eigengenes.output) <- rownames(datExpr)
 dim(eigengenes.output)
 
 # save appropriate dataset
-# write.csv(x = eigengenes.output, file = "04_results/eigengenes_output_fem_filt.csv")
+filename <- paste("04_results/", REF, "_eigengenes_output.csv", sep = "")
+write.csv(x = eigengenes.output, file = filename)
 
 # Measure dissimilarity b/w module eigengenes (here as a signed correlation)
 dissimME <- 1-(t(cor(datMEs, method="pearson")))/2   # spearman is optional if want to try non-parametric
@@ -472,7 +477,8 @@ geneInfo0 = data.frame(transcript_id = probes,
 dim(geneInfo0)
 
 # Write out results
-#write.csv(geneInfo0, file = "04_results/geneInfo0_fem_filt_most_connected_25000.csv") # FEMALE
+filename <- paste("04_results/", REF, "_geneInfo_25k.csv", sep = "")
+write.csv(x = geneInfo0, file = filename)
 
 
 #### 9. Identify which female modules are conserved in males ####
@@ -583,7 +589,10 @@ print( cbind(statsObs[, c("medianRank.pres", "medianRank.qual")],
 
 mod.pres.table <- as.data.frame(cbind(statsObs[, c("medianRank.pres", "medianRank.qual")],
                                       signif(statsZ[, c("Zsummary.pres", "Zsummary.qual")], 2)) )
-# write.csv(mod.pres.table, file = "04_results/mod_perservation_table.csv")
+
+# Write out
+filename <- paste("04_results/", REF, "_mod_preservation_table.csv", sep = "")
+write.csv(mod.pres.table, file = filename)
 
 
 # Set up plot of MedianRank.pres (preservation) & Zsummary.pres for fem mods ~ mod size
