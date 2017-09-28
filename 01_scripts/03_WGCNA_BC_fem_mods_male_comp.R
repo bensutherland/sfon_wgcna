@@ -74,8 +74,15 @@ plot(sampleTree, main = "Sample clustering to detect outliers", sub="", xlab="",
 ## Note: Observations: 
 ## For mature females, 3 main clusters, outlier having large livers
 
+# setup list
+cutline.fem <- 350
+cutline.male <- 360
+cutline.list <- list(female = cutline.fem, male = cutline.male)
+
+# subset list
+cutline <- cutline.list[[REF]] 
+
 # To improve resolution on trends unrelated to the outlier cluster (i.e. liver weight), cut the tree.
-cutline <- 350 # set cutline for females
 abline(h = cutline, col = "red") # add to plot
 
 dev.off()
@@ -98,7 +105,13 @@ colnames(traitData)
 str(traitData)
 
 # Choose phenotypes to retain
-traits.to.remove <- c(3:5,7,8:10,14,26:27,30,41:45,46) # female
+# setup list
+traits.to.remove.fem <- c(3:5,7,8:10,14,26:27,30,41:45,46)
+traits.to.remove.male <- c(3:5,7,8:10,14,26:27,30,40:41,43,45,46)
+traits.list <- list(female = traits.to.remove.fem, male = traits.to.remove.male)
+
+# subset list
+traits.to.remove <- traits.list[[REF]] 
 colnames(traitData[, -c(traits.to.remove)]) # confirm traits to keep
 
 # Keep only the desired traits
