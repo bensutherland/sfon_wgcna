@@ -6,13 +6,15 @@
 # Load setup wgcna from previous
 load(file = "02_input_data/sfon_wgcna_setup.RData")
 
-
 #### 2.b. Choose working subset ####
-## all female, not parent
-datExpr0 <- datExpr0.fem
+## Choose reference set to build modules
 
-# Need to do some filtering similar to the following 
-# (remember, at log2), and cpm thresh was 0.5, so log2(0.5)
+REF <- "female"
+dim(datExpr.list[[REF]])
+datExpr0 <- datExpr.list[[REF]]
+
+SEC <- "male"
+dim(datExpr.list[[SEC]]) # this will be input into datExpr0 below during module comparison
 
 
 #### 2.c. Filter the subset ####
@@ -449,7 +451,7 @@ dim(geneInfo0)
 
 #### 9. Identify which female modules are conserved in males ####
 #### 9.a. Import male data and filter
-datExpr0 <- datExpr0.male
+datExpr0 <- datExpr.list[[SEC]]
 
 ## Filter by defining which genes have > req num expressing samples
 num.indiv <- 5

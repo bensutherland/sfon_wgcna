@@ -127,5 +127,10 @@ dim(datExpr0.AC) # 10 indiv
 # backup all data before subset
 datExpr0.bck <- datExpr0
 
+# Create list object with all subsets
+datExpr.list <- list(female = datExpr0.fem, male = datExpr0.male, AC = datExpr0.AC)
+names(datExpr.list)
+dim(datExpr.list$female)
+dim(datExpr.list[["female"]])
 
 save.image(file = "02_input_data/sfon_wgcna_setup.RData")
