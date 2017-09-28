@@ -6,58 +6,18 @@
 # Load setup wgcna from previous
 load(file = "02_input_data/sfon_wgcna_setup.RData")
 
-#### 2.a. Create subsets of data (samples) ####
-# # All Brook Charr individuals
-# files.retain.BC <- files.df$file.name[files.df$fish.id != "NA"] # no AC
-# files.retain.BC
-# datExpr0.BC <- datExpr0[files.retain.BC, ]
-# dim(datExpr0.BC) # 47 indiv, no parent
-# rownames(datExpr0.BC)
-
-#females (all, not parent)
-files.retain.fem <- files.df$file.name[files.df$sex == "0" & files.df$fish.id != "F2F" 
-                                       & files.df$fish.id != "NA"] # Show fish.id, no parent, no AC
-files.retain.fem
-datExpr0.fem <- datExpr0[files.retain.fem, ]
-dim(datExpr0.fem) # 47 indiv, no parent
-rownames(datExpr0.fem)
-
-# #males (maturity all same)
-files.retain.male <- files.df$file.name[files.df$sex == "1" & files.df$fish.id != "F2M"
-                                        & files.df$fish.id != "NA"] # Show file name, no parent
-files.retain.male
-datExpr0.male <- datExpr0[files.retain.male, ]
-dim(datExpr0.male) # 53 indiv, no parent
-# 
-
-# #Arctic Charr (all males)
-salp.interp <- read.csv("02_input_data/salp_interp_table_2017-04-11.csv")
-AC.names.8deg <- salp.interp$sample[salp.interp$temp=="8"]
-
-files.retain.AC <- AC.names.8deg
-datExpr0.AC <- datExpr0[files.retain.AC, ]
-dim(datExpr0.AC) # 10 indiv
-
-# backup all data before subset
-#datExpr0.bck <- datExpr0
-##### RESTART SUBSET ####
-# datExpr0 <- datExpr0.bck
 
 #### 2.b. Choose working subset ####
-## Brook Charr all
-#datExpr0 <- datExpr0.BC
-
-## female, all
+## all female, not parent
 datExpr0 <- datExpr0.fem
 
+##### PUT THIS WAY LATER ####
 ## male 
 #datExpr0 <- datExpr0.male
 
-## Arctic Charr 8 degrees
-#datExpr0 <- datExpr0.AC
-
-# Note: Will need to do some filtering similar to the following 
+# Need to do some filtering similar to the following 
 # (remember, at log2), and cpm thresh was 0.5, so log2(0.5)
+
 
 #### 2.c. Filter the subset ####
 ## Define which genes have > req num expressing samples
@@ -97,22 +57,6 @@ dim(datExpr0.filt)
 # Replace orignal object with filtered
 datExpr0 <- datExpr0.filt
 
-#### GO ENRICHMENT OUTPUT ####
-# # save out as background for GO enrichment
-# background <- datExpr0
-# annot = read.table(file = "02_input_data/sfontinalis_contigs_annotation_report_v1.0_shortform.txt",
-#                    sep = "\t", header = TRUE)
-# probes <- names(datExpr0)
-# probes2annot <- match(probes, annot$transcript_id) # Index position of probe in annot. file
-# sum(is.na(probes2annot)) #number of contigs not present in the annotation file
-# tail(probes)
-# background <- data.frame(transcript_id = probes,
-#                          uniprot_id = annot$sprot_Top_BLASTX_hit[probes2annot])
-# head(background)
-# 
-# # save out background
-# write.csv(x = datExpr0, file = "04_results/background_genes_fem_mat.csv")
-
 
 #### 3. Data Quality Control ####
 gsg = goodSamplesGenes(datExpr0, verbose = 3)
@@ -124,19 +68,17 @@ sampleTree <- hclust(dist(datExpr0), method = "average") # default dist metric =
 plot(sampleTree, main = "Sample clustering to detect outliers", sub="", xlab="", cex.lab = 1.5,
      cex.axis = 1.5, cex.main = 2)
 
-# For mature females, 3 main clusters, outlier having large livers
-# For males, 2 potential outliers, lib69 and lib37
+## Note: Observations: 
+## For mature females, 3 main clusters, outlier having large livers
 
 # To improve resolution on trends unrelated to the outlier cluster (i.e. liver weight), cut the tree.
-# Set cutline for males or females
-cutline <- 350 # choose height at which to cut (females)
-# cutline <- 360 # for males
-# cutline <- 600 # to not cut at all (include all samples in trait file)
+cutline <- 350 # set cutline for females
 abline(h = cutline, col = "red") # add to plot
 
 # Save out as 8.5 x 4.5
 # sample_clust_to_detect_outliers_<sex>.pdf
 
+# Identify which samples are in the largest portion of the cut tree
 clust = cutreeStatic(sampleTree, cutHeight = cutline, minSize = 10)
 table(clust) # clust 1 contains the samples we want to keep
 keepSamples = (clust==1)
@@ -145,10 +87,6 @@ datExpr = datExpr0[keepSamples, ] # keep only main group
 nGenes = ncol(datExpr)
 nSamples = nrow(datExpr)
 
-#### FOR MALES ####
-# At this point, if working with males save the object to be used as the comparison test set for module conservation
-# datExpr0.male.low.expr.filt <- datExpr
-
 #### 4.a. Incorporate trait data (Sfon) ####
 # Input trait data, and remove unneeded columns
 traitData <- files.df[files.df$species=="Sfon", ]
@@ -156,13 +94,11 @@ dim(traitData)
 colnames(traitData)
 str(traitData)
 
-# Choose phenotypes for females or males
-# traits.to.remove <- c(3:5,7,8:10,14,26:27,30,41,43,45,46) # Brook Charr all
+# Choose phenotypes to retain
 traits.to.remove <- c(3:5,7,8:10,14,26:27,30,41:45,46) # female
-# traits.to.remove <- c(3:5,7,8:10,14,26:27,30,40:41,43,45,46) # male
-
-
 colnames(traitData[, -c(traits.to.remove)]) # confirm traits to keep
+
+# Keep only the desired traits
 allTraits <- traitData[, -c(traits.to.remove)] # remove unneeded columns
 
 # Dataframe w/ traits to match expr data
@@ -176,26 +112,12 @@ rownames(datTraits)
 str(datTraits)
 collectGarbage()
 
-## backup datTraits object
-#datTraits.bck <- datTraits
-# datTraits <- datTraits.bck # how to go backwards
-
 # change datTraits to numeric
 for(t in 1:length(datTraits)){
   datTraits[,t] <- as.numeric(datTraits[,t])
 }
 str(datTraits)
 
-# NO LONGER NECESSARY?
-# reduce name size for datExpr
-# rownames(datExpr) <- sub('.*\\.', '', x = rownames(datExpr)) 
-# # this works by searching '.*' one or more characters, followed by a dot '\\.' (\\ is escape), this will match until the last . char in the string.
-# rownames(datExpr) <- gsub(x = rownames(datExpr), pattern = "_R1", replacement = "")
-
-# Recap:
-# expr data is 'datExpr'
-# trait data is 'datTraits'
-# and they are matched with lib.id (rownames each)
 
 #### 4.b. Re-cluster after rem outliers ####
 sampleTree2 = hclust(dist(datExpr), method = "average")
@@ -291,7 +213,7 @@ gc()
 # Compute the topological overlap matrix based on the adjacency matrix.
 dissTOM=TOMdist(ADJ) # default is "unsigned"
 save(dissTOM, file ="dissTOM_goes_w_step7")
-# save(dissTOM, file ="dissTOM_goes_w_step7_MALES") # for males
+
 gc()
 
 # Hierarchical cluster the TOM matrix
@@ -316,8 +238,7 @@ plotDendroAndColors(hierTOM, dynamicColors, "Dynamic Tree Cut",
 
 table(dynamicColors) # how many modules were identified and what are the module sizes
 unmerged_modules_counts <- as.data.frame(table(dynamicColors)) # how many modules were identified and what are the module sizes
-write.csv(unmerged_modules_counts, file = "04_results/unmerged_modules_counts_fem_filt.csv")
-# write.csv(unmerged_modules_counts, file = "04_results/unmerged_modules_counts_male_filt.csv") #MALES
+# write.csv(unmerged_modules_counts, file = "04_results/unmerged_modules_counts_fem_filt.csv")
 
 #### 6. Generate module eigengenes ####
 #### 6.a. Create and cluster module eigengenes ####
@@ -356,12 +277,8 @@ plotDendroAndColors(hierTOM, cbind(dynamicColors, mergedColors),
 
 table(mergedColors) # after merging, how many modules remain and with how many genes
 merged_modules_counts <- as.data.frame(table(mergedColors)) # how many modules were identified and what are the module sizes
-write.csv(merged_modules_counts, file = "04_results/merged_modules_counts_0.25_fem_filt.csv")
-# write.csv(merged_modules_counts, file = "04_results/merged_modules_counts_0.25_male_filt.csv") #MALE
-
-
+# write.csv(merged_modules_counts, file = "04_results/merged_modules_counts_0.25_fem_filt.csv")
 # save.image(file = "02_input_data/sfon_wgcna_save_point_step8.Rdata")
-# save.image(file = "02_input_data/sfon_wgcna_save_point_step8_MALE.Rdata") #MALE
 
 #### 6.c. Correlate module eigengenes
 names(mergedMEs)
@@ -378,8 +295,6 @@ dim(eigengenes.output)
 
 # save appropriate dataset
 # write.csv(x = eigengenes.output, file = "04_results/eigengenes_output_fem_filt.csv")
-# write.csv(x = eigengenes.output, file = "04_results/eigengenes_output_male_filt.csv")
-
 
 # Measure dissimilarity b/w module eigengenes (here as a signed correlation)
 dissimME <- 1-(t(cor(datMEs, method="pearson")))/2   # spearman is optional if want to try non-parametric
@@ -422,8 +337,8 @@ labeledHeatmap(Matrix = moduleTraitCor,
                main = paste("Module-trait relationships"))
 
 # fem.mat, 25 modules, 27 traits save out as 10 x 9
-# male, 27 modules, 28 traits save out as 10 x 9
 # module-trait_rel_<sex>.pdf
+
 
 #### 8 Calculate module membership and gene significance ####
 # Per gene/trait combo, Gene Significance *GS* = |cor| b/w  ***gene and trait***
@@ -435,11 +350,6 @@ names(datTraits) # Define variable osmo.delta containing the osmo.delta column o
 # female
 TOI.names <- c("weight.g_0709", "sp.growth.rateT1.T3", "condit.fact_T2", "hep.som.ind"
                , "cort.delta", "osmo.delta", "chlor.delta", "fem.egg.diam")
-# male
-TOI.names <- c("weight.g_0709", "sp.growth.rateT1.T3", "condit.fact_T2", "hep.som.ind"
-               , "cort.delta", "osmo.delta", "chlor.delta", "male.sperm.conc", "male.sperm.diam")
-
-
 
 # Create data.frame of traits of interest
 TOI = as.data.frame(datTraits[TOI.names])
@@ -538,14 +448,54 @@ geneInfo0 = data.frame(transcript_id = probes,
 dim(geneInfo0)
 
 # Write out results
-write.csv(geneInfo0, file = "04_results/geneInfo0_fem_filt_most_connected_25000.csv") # FEMALE
-# write.csv(geneInfo0, file = "04_results/geneInfo0_male_filt_most_connected_25000.csv") # MALE
+#write.csv(geneInfo0, file = "04_results/geneInfo0_fem_filt_most_connected_25000.csv") # FEMALE
 
-#### SAVE OUT COMPLETED MALE DATASET (WITH MODULES GENERATED)
-save.image(file = "02_input_data/sfon_wgcna_save_point_step9_MALE.RData")
 
-#### 9. Other sex WGCNA analysis ####
-# First to redo all steps using male, return to step (To go back) and then 2.b and proceed through to here again
+#### 9. Identify which female modules are conserved in males ####
+#### 9.a. Import male data and filter
+datExpr0 <- datExpr0.male
+
+## Filter by defining which genes have > req num expressing samples
+num.indiv <- 5
+
+dim(datExpr0)
+expressed <- NULL
+keep.genes <- NULL
+expressed.tally <- NULL
+for(i in 1:length(colnames(datExpr0))) { 
+  expressed <- length(which(datExpr0[,i] > -1))
+  print(expressed)
+  expressed.tally <- c(expressed.tally, expressed)
+  if (expressed > num.indiv) {
+    keep.genes <- c(keep.genes, colnames(datExpr0)[i])
+  }
+}
+
+head(keep.genes)
+length(keep.genes)
+
+# Plot the freq of genes for each bin of number samples expressed?
+par(mfrow=c(1,1))
+hist(expressed.tally
+     , main = "Transcripts expressed in number samples"
+     , xlab = "Num. indiv. expr gene"
+     , ylab = "Num. transcripts in bin"
+     , las = 1) 
+
+# save out as 5 x 4
+# transcript_expr_in_num_samples_<sex>.pdf
+
+# Filter by low expression
+datExpr0.filt <- datExpr0[ ,keep.genes]
+dim(datExpr0.filt)
+
+# Replace orignal object with filtered
+datExpr0 <- datExpr0.filt
+
+################
+# NEXT STEP: turn datExpr0 into datExpr0.low.expr.filt
+################
+
 
 #### 10. Differential network analysis ####
 # Much of this analysis comes from the tutorial found:
@@ -554,8 +504,6 @@ save.image(file = "02_input_data/sfon_wgcna_save_point_step9_MALE.RData")
 # data is:
 files.retain.fem
 files.retain.male
-
-
 
 
 #### 10.a. Calculate module preservation ####
