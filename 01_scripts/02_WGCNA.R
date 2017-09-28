@@ -1,7 +1,8 @@
 ## WGCNA analysis
-# This is the second step of the WGCNA repo, with input originating from 01_edgeR_normalization.R    
+# Second step of the WGCNA repo, with input originating from 01_edgeR_normalization.R    
 
-# rm(list=ls())
+## Clean space
+#rm(list=ls())
 
 ## Install Packages
 # source("http://bioconductor.org/biocLite.R")
@@ -12,68 +13,55 @@ require("WGCNA")
 #biocLite("edgeR")
 require("edgeR")
 
-# Note, the current analysis begins with female data that excludes immature females 
-# and large liver weight females, b/c manual says to reduce variation and rem. outliers
+# Note: currently female data, excluding large liver weight and immature females 
+# because manual says to reduce variation and remove outliers
 
-# Issues:
-# 1) stringsAsFactors seems to keep defaulting to TRUE, BUT this is probably bc it was introduced in edgeR script..
-
-# Set working directory
+## Set working directory
+## Wayne
 # setwd("~/Documents/bernatchez/01_Sfon_projects/04_Sfon_eQTL/sfon_wgcna")
-
-# macpro
-# setwd("~/Documents/sfon_wgcna/")
+# enableWGCNAThreads(nThreads = 3) #Wayne
 
 # Logan & Xavier
 setwd("~/Documents/10_bernatchez/01_sfon_eqtl/sfon_wgcna/")
+enableWGCNAThreads(nThreads = 7) # Logan
+# enableWGCNAThreads(nThreads = 14) # Xavier
 
-#### 1 Import interp file and data ####
 # Important setup for loading expression data
 options(stringsAsFactors = FALSE) #IMPORTANT SETTING
 
+
+#### 1.a. Import interp file ####
 # Load part 1 results
 load("02_input_data/sfon_wgcna_01_output.RData")
 
-# Enable parallel processing
-# enableWGCNAThreads(nThreads = 3) #Wayne
-# enableWGCNAThreads(nThreads = 10) #MacPro
-# enableWGCNAThreads(nThreads = 7) # Logan
-enableWGCNAThreads(nThreads = 14) # Xavier
-
-### End front matter ###
-
-### Add Arctic Charr to interp and species column
+### Add Arctic Charr to interp
 AC.names <- colnames(normalized.output.log2)[105:122] #contains AC names
-str(interp)
+# str(interp)
 
-length(colnames(interp))-1 # number phenotypes
-length(AC.names) # number of Arctic Charr to add
-18*44
+# Generate Arctic char block for interp
+number.phenos <- length(colnames(interp))-1 # number phenotypes
+number.AC.ind <- length(AC.names) # number of Arctic Charr to add
+AC.cells <- number.phenos*number.AC.ind # 792
 
-
-interp.addition <- as.data.frame(matrix(data = c(AC.names, rep("NA", times = 792))
+# Make block dataframe to add
+interp.addition <- as.data.frame(matrix(data = c(AC.names, rep("NA", times = AC.cells))
                 , nrow=18, ncol=45))
-
-str(interp.addition)
 colnames(interp.addition) <- colnames(interp) # make matching column names
 
+# Attach AC to the interp
 interp.w.AC <- rbind2(x = interp, y = interp.addition)
 
-# Create species column
+### Add species column to the interp and make df
 species <- c(rep("Sfon", times = length(interp[,1]))
                  , rep("Salp", times = length(interp.addition[,1])))
 interp.final <- cbind(interp.w.AC, species)
-str(interp.final)
 
-# Create data.frame
 files.df <- data.frame(interp.final,stringsAsFactors = F)
-#names(files.df)
-str(files.df)
+# str(files.df)
 files.df$sex <- as.character(files.df$sex)
 files.df$matur <- as.character(files.df$matur)
 str(files.df)
-# still all characters...
-# this is fixed later in "Incorporate trait data.."
+# still all characters... but this is fixed later in "Incorporate trait data.."
 
 # Recode sex as binary
 head(files.df[,c("sex","matur")])
@@ -88,15 +76,7 @@ files.df$matur <- as.numeric(files.df$matur)
 head(files.df[,c("sex","matur")])
 
 
-# # Check for discrepencies in interp
-# # There were some issues with the sex of individuals in the interp file, 
-# # but it looks like those samples are not in this set,
-# # because all the below are NA
-# files.df$fish.id[files.df$male.sperm.conc != "NA" & files.df$sex == "F"]
-# files.df$fish.id[files.df$fem.egg.diam != "NA" & files.df$sex == "M"]
-
-
-# Make object with expression data
+#### 1.b. Create expression object #### 
 sfeqtl <- normalized.output.log2 # (cols = samples, rows = contigs)
 dim(sfeqtl)
 sfeqtl[1:5,1:5]
@@ -106,6 +86,11 @@ str(sfeqtl[1:5,1:5]) #confirm expression values are numeric
 datExpr0 = as.data.frame(t(sfeqtl))
 colnames(datExpr0)[1:4] # genes
 rownames(datExpr0)[1:4] # samples
+
+# For Testing, Make a Mini Data Set
+datExpr0.test <- datExpr0[,1:500]
+datExpr0 <- datExpr0.test
+dim(datExpr0)
 
 #### 2.a. Create subsets of data (samples) ####
 # All Brook Charr individuals
