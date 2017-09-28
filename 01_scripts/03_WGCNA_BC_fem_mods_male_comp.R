@@ -17,8 +17,6 @@ datExpr0 <- datExpr.list[[REF]]
 dim(datExpr.list[[SEC]]) # this will be input into datExpr0 below during module comparison
 
 
-
-
 #### 2. Filter the subset ####
 ## Define which genes have > req num expressing samples
 num.indiv <- 5
@@ -40,6 +38,9 @@ head(keep.genes)
 length(keep.genes)
 
 # Plot the freq of genes for each bin of number samples expressed?
+filename <- paste("04_results/", REF, "_transcript_expr_in_num_samp.pdf", sep = "")
+pdf(file = filename, width = 5, height = 4)
+
 par(mfrow=c(1,1))
 hist(expressed.tally
      , main = "Transcripts expressed in number samples"
@@ -47,8 +48,7 @@ hist(expressed.tally
      , ylab = "Num. transcripts in bin"
      , las = 1) 
 
-# save out as 5 x 4
-# transcript_expr_in_num_samples_<sex>.pdf
+dev.off()
 
 # Filter by low expression
 datExpr0.filt <- datExpr0[ ,keep.genes]
@@ -63,6 +63,9 @@ gsg = goodSamplesGenes(datExpr0, verbose = 3)
 gsg$allOK #see tutorial if not true
 
 # plot samples to detect outliers
+filename <- paste("04_results/", REF, "_sample_clust_to_detect_outliers.pdf", sep = "")
+pdf(file = filename, width = 8.5, height = 4.5)
+
 par(mfrow=c(1,1), mar = c(0,4,2,0), cex = 0.6)
 sampleTree <- hclust(dist(datExpr0), method = "average") # default dist metric = euclidean; hclust agglomeration is "average"
 plot(sampleTree, main = "Sample clustering to detect outliers", sub="", xlab="", cex.lab = 1.5,
@@ -75,8 +78,8 @@ plot(sampleTree, main = "Sample clustering to detect outliers", sub="", xlab="",
 cutline <- 350 # set cutline for females
 abline(h = cutline, col = "red") # add to plot
 
-# Save out as 8.5 x 4.5
-# sample_clust_to_detect_outliers_<sex>.pdf
+dev.off()
+
 
 # Identify which samples are in the largest portion of the cut tree
 clust = cutreeStatic(sampleTree, cutHeight = cutline, minSize = 10)
@@ -124,6 +127,9 @@ sampleTree2 = hclust(dist(datExpr), method = "average")
 traitColors = numbers2colors(datTraits, signed = F) # Use color to represent trait values (white = low; red = high; grey = NA)
 
 # Plot sample dendrogram w/ traits
+filename <- paste("04_results/", REF, "_samp_clust_and_trait_heatmap.pdf", sep = "")
+pdf(file = filename, width = 9, height = 7)
+
 plotDendroAndColors(sampleTree2, traitColors,
                     groupLabels = names(datTraits),
                     cex.dendroLabels = 0.7,
@@ -136,8 +142,8 @@ plotDendroAndColors(sampleTree2, traitColors,
                     #abCol = "red"
 )
 
-# save as 9 x 7
-# sample_clust_and_trait_heatmap_<sex>.pdf
+dev.off()
+
 
 #### 5. Generate Clusters ####
 #### 5.a Determine soft-thresh power (Network Topol) ####
@@ -227,14 +233,16 @@ dynamicColors = labels2colors(colorh1) # Convert numeric lables into colors
 num.transcripts <- length(ADJ[,1])
 
 # Plot dendrogram w/ module colors
+filename <- paste("04_results/", REF, "_plotDendroAndColors.pdf", sep = "")
+pdf(file = filename, width = 10, height = 5)
+
 par(mfrow=c(1,1))
 plotDendroAndColors(hierTOM, dynamicColors, "Dynamic Tree Cut",
                     dendroLabels = FALSE, hang = 0.03,
                     addGuide = TRUE, guideHang = 0.05,
                     main = paste(c(num.transcripts, "contigs"))
                     , las = 1)
-# save out as 10 x 5
-# as plotDendroAndColors_<sex>.pdf
+dev.off()
 
 table(dynamicColors) # how many modules were identified and what are the module sizes
 unmerged_modules_counts <- as.data.frame(table(dynamicColors)) # how many modules were identified and what are the module sizes
@@ -253,27 +261,33 @@ MEDiss <- 1-cor(MEs) #dissim
 METree <- hclust(as.dist(MEDiss), method = "average") #cluster
 
 # Plot clusters of module eigengenes
+filename <- paste("04_results/", REF, "_clust_mod_eigengenes_and_merge_line.pdf", sep = "")
+pdf(file = filename, width = 8, height = 5)
+
 plot(METree, main = "Clustering of module eigengenes",
      xlab = "", sub = "")
 abline(h=c(0.1,0.2,0.3,0.4), col = c("red", "orange", "green", "blue")) #add level of correlation for cutoff
 MEDissThres = 0.25 # note: 0.25 is suggested level from WGCNA Tutorial
 abline(h=MEDissThres, col = "purple") # Plot the cut line into the dendrogram
 
-# save as 8 x 5
-# as clust_of_mod_eigengenes_and_merge_line_<sex>.pdf
+dev.off()
 
 #### 6.b. Merge module eigengenes ####
 merge <- mergeCloseModules(datExpr[,restConnectivity], dynamicColors, cutHeight = MEDissThres, verbose = 3)
 mergedColors <- merge$colors # merged module colors
 mergedMEs <- merge$newMEs # merged module eigengenes
 
+# Plot
+filename <- paste("04_results/", REF, "_plotDendroAndColors_merged.pdf", sep = "")
+pdf(file = filename, width = 10, height = 5)
+
 plotDendroAndColors(hierTOM, cbind(dynamicColors, mergedColors),
                     c("Dynamic Tree Cut", "Merged dynamic"),
                     dendroLabels = FALSE, hang = 0.03,
                     addGuide = TRUE, guideHang = 0.05,
                     main=paste(num.transcripts,"contigs - merge at",1-MEDissThres))
-# save out as 10 x 5
-# as plotDendroAndColors_merged_<sex>.pdf
+dev.off()
+
 
 table(mergedColors) # after merging, how many modules remain and with how many genes
 merged_modules_counts <- as.data.frame(table(mergedColors)) # how many modules were identified and what are the module sizes
@@ -303,11 +317,14 @@ dissimME <- 1-(t(cor(datMEs, method="pearson")))/2   # spearman is optional if w
 hclustdatME <- hclust(as.dist(dissimME), method="average")
 
 # Plot
+filename <- paste("04_results/", REF, "_clust_merged_mod_eigengenes.pdf", sep = "")
+pdf(file = filename, width = 8, height = 5)
+
 par(mfrow=c(1,1))
 plot(hclustdatME, main="Clustering tree based on the module eigengenes")
 
-# save out as 8 x 5
-# clust_merged_mod_eigengenes_<sex>.pdf
+dev.off()
+
 
 #### 7.a. Correlate module eigengenes w/ traits and plot ####
 # calculate correlation
@@ -323,6 +340,9 @@ textMatrix = paste(signif(moduleTraitCor, 2), "\n(",
 dim(textMatrix) <- dim(moduleTraitCor) #give dimensions of textMatrix
 
 # Plot the correlation values in a heatmap plot
+filename <- paste("04_results/", REF, "_module-trait_rel.pdf", sep = "")
+pdf(file = filename, width = 10, height = 9)
+
 par(mar = c(7, 10, 3, 3))
 labeledHeatmap(Matrix = moduleTraitCor,
                xLabels = names(datTraits),
@@ -336,8 +356,7 @@ labeledHeatmap(Matrix = moduleTraitCor,
                zlim = c(-1,1),
                main = paste("Module-trait relationships"))
 
-# fem.mat, 25 modules, 27 traits save out as 10 x 9
-# module-trait_rel_<sex>.pdf
+dev.off()
 
 
 #### 8 Calculate module membership and gene significance ####
@@ -475,6 +494,9 @@ head(keep.genes)
 length(keep.genes)
 
 # Plot the freq of genes for each bin of number samples expressed?
+filename <- paste("04_results/", SEC, "_transcript_expr_in_num_samp.pdf", sep = "")
+pdf(file = filename, width = 5, height = 4)
+
 par(mfrow=c(1,1))
 hist(expressed.tally
      , main = "Transcripts expressed in number samples"
@@ -482,8 +504,8 @@ hist(expressed.tally
      , ylab = "Num. transcripts in bin"
      , las = 1) 
 
-# save out as 5 x 4
-# transcript_expr_in_num_samples_<sex>.pdf
+dev.off()
+
 
 # Filter by low expression
 datExpr0.filt <- datExpr0[ ,keep.genes]
@@ -496,8 +518,6 @@ datExpr0 <- datExpr0.filt
 datExpr0.SEC.low.expr.filt <- datExpr0 
 
 #### 10. Differential network analysis ####
-# Much of this analysis comes from the tutorial found:
-# https://labs.genetics.ucla.edu/horvath/CoexpressionNetwork/ModulePreservation/Tutorials/
 
 ## Samples:
 # files.retain.fem
@@ -570,6 +590,9 @@ plotData = cbind(mp$preservation$observed[[ref]][[test]][, 2], mp$preservation$Z
 mains = c("Preservation Median rank", "Preservation Zsummary");
 
 # Plot
+filename <- paste("04_results/", REF, "_mod_conservation_in", SEC, ".pdf", sep = "")
+pdf(file = filename, width = 10, height = 6)
+
 par(mfrow = c(1,2), mar = c(4.5,4.5,2.5,1))
 for (p in 1:2)
 {
@@ -606,7 +629,7 @@ for (p in 1:2)
     abline(h=10, col = "darkgreen", lty = 2)
   } }
 
-# save out as 10 x 6
+dev.off()
 
 
 #### 10.d. Plot other statistics in one plot ####
@@ -628,6 +651,9 @@ labs <- nums.cols.df$nums2match
 #labs = match(modColors[plotMods], standardColors(50)) # not working, not all cols are in there
 
 # Plot each Z statistic in a separate plot.
+filename <- paste("04_results/", REF, "_zstats_in_comp_w_", SEC, ".pdf", sep = "")
+pdf(file = filename, width = 12, height = 10)
+
 par(mfrow = c(4,5), mar = c(3,3,2,1), mgp = c(1.6, 0.4, 0))
 for (s in 1:ncol(statsZ))
 {
@@ -666,6 +692,6 @@ legend(x = "center", y = "center"
        , bty="n"
        , x.intersp=0.4)
 
-# save out as 12 x 10
+dev.off()
 
 # save.image(file = "02_input_data/completed_step10.RData")
