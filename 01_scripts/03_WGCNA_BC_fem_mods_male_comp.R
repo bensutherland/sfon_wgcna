@@ -1,4 +1,4 @@
-# wgcna Brook Charr female module generation and Brook Charr male comparison
+# wgcna Brook Charr reference module generation and comparison with second dataset
 
 ## Clean space
 #rm(list=ls())
@@ -6,18 +6,20 @@
 # Load setup wgcna from previous
 load(file = "02_input_data/sfon_wgcna_setup.RData")
 
-#### 2.b. Choose working subset ####
+#### User: choose working subset ####
 ## Choose reference set to build modules
-
+# choose among "female", "male" and "AC" for comparisons
 REF <- "female"
+SEC <- "male"
+
 dim(datExpr.list[[REF]])
 datExpr0 <- datExpr.list[[REF]]
-
-SEC <- "male"
 dim(datExpr.list[[SEC]]) # this will be input into datExpr0 below during module comparison
 
 
-#### 2.c. Filter the subset ####
+
+
+#### 2. Filter the subset ####
 ## Define which genes have > req num expressing samples
 num.indiv <- 5
 
@@ -490,8 +492,8 @@ dim(datExpr0.filt)
 # Replace orignal object with filtered
 datExpr0 <- datExpr0.filt
 
-# Rename the male datExpr0
-datExpr0.male.low.expr.filt <- datExpr0 
+# Rename the second datExpr0
+datExpr0.SEC.low.expr.filt <- datExpr0 
 
 #### 10. Differential network analysis ####
 # Much of this analysis comes from the tutorial found:
@@ -503,26 +505,26 @@ datExpr0.male.low.expr.filt <- datExpr0
 
 #### 10.a. Set up for module preservation ####
 # This is the male filtered expression data
-dim(datExpr0.male.low.expr.filt)
+dim(datExpr0.SEC.low.expr.filt)
 #datExpr.mal <- datExpr0.male.low.expr.filt
 
-## Rename datExpr (female, filtered)
-datExpr.fem <- datExpr
-dim(datExpr.fem)
+## Rename datExpr (from REF, filtered)
+datExpr.REF <- datExpr
+dim(datExpr.REF)
 
 # Limit to only the top connected genes (previously identified)
-datExpr0.fem.mat.top25000 <- datExpr.fem[,restConnectivity]
-dim(datExpr0.fem.mat.top25000)
+datExpr0.REF.mat.top25000 <- datExpr.REF[,restConnectivity]
+dim(datExpr0.REF.mat.top25000)
 
 # Set up multi-expression data with module colors from female
-setLabels = c("Female", "Male")
-multiExpr = list(Female = list(data = datExpr0.fem.mat.top25000), Male = list(data = datExpr0.male.low.expr.filt))
-# note: currently male is filtered on low expression specifically
+setLabels = c(REF, SEC)
+multiExpr = list(REF = list(data = datExpr0.REF.mat.top25000), SEC = list(data = datExpr0.SEC.low.expr.filt))
+# note: currently SEC is filtered on low expression specifically
 
-goodSamplesGenes(datExpr0.fem.mat.top25000)
-goodSamplesGenes(datExpr0.male.low.expr.filt)
+goodSamplesGenes(datExpr0.REF.mat.top25000)
+goodSamplesGenes(datExpr0.SEC.low.expr.filt)
 
-multiColor = list(Female = mergedColors)
+multiColor = list(REF = mergedColors)
 
 #### 10.b. Test for module preservation ####
 system.time( {
