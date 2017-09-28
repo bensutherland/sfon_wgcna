@@ -87,10 +87,10 @@ datExpr0 = as.data.frame(t(sfeqtl))
 colnames(datExpr0)[1:4] # genes
 rownames(datExpr0)[1:4] # samples
 
-# For Testing, Make a Mini Data Set
-datExpr0.test <- datExpr0[,1:500]
-datExpr0 <- datExpr0.test
-dim(datExpr0)
+# ### Switch for testing ####
+# datExpr0.test <- datExpr0[,1:500]
+# datExpr0 <- datExpr0.test
+# dim(datExpr0)
 
 #### 2.a. Create subsets of data (samples) ####
 # # All Brook Charr individuals
