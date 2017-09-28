@@ -33,7 +33,7 @@ z-*
 *.fastq
 *~
 *.Rproj*
-*.Rdata
+*.RData
 *.temp
 02_input_data/*.txt
 *.pdf
