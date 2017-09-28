@@ -11,10 +11,6 @@ load(file = "02_input_data/sfon_wgcna_setup.RData")
 ## all female, not parent
 datExpr0 <- datExpr0.fem
 
-##### PUT THIS WAY LATER ####
-## male 
-#datExpr0 <- datExpr0.male
-
 # Need to do some filtering similar to the following 
 # (remember, at log2), and cpm thresh was 0.5, so log2(0.5)
 
@@ -492,55 +488,31 @@ dim(datExpr0.filt)
 # Replace orignal object with filtered
 datExpr0 <- datExpr0.filt
 
-################
-# NEXT STEP: turn datExpr0 into datExpr0.low.expr.filt
-################
-
+# Rename the male datExpr0
+datExpr0.male.low.expr.filt <- datExpr0 
 
 #### 10. Differential network analysis ####
 # Much of this analysis comes from the tutorial found:
 # https://labs.genetics.ucla.edu/horvath/CoexpressionNetwork/ModulePreservation/Tutorials/
 
-# data is:
-files.retain.fem
-files.retain.male
+## Samples:
+# files.retain.fem
+# files.retain.male
 
-
-#### 10.a. Calculate module preservation ####
-dim(datExpr0.fem) #rows = samples, cols = genes
+#### 10.a. Set up for module preservation ####
+# This is the male filtered expression data
 dim(datExpr0.male.low.expr.filt)
+#datExpr.mal <- datExpr0.male.low.expr.filt
 
-# save out the male low.expr filtered data to re-use later
-save(datExpr0.male.low.expr.filt, file = "02_input_data/datExpr0.male.low.expr.filt")
-
-
-# Old Notes, may not still be conducted..
-# In the tutorial, the gene names agree in the two sets, but is not necessary
-# Here, we will automatically ignore gene names that cannot be matched across datasets
-# but make sure at least half the genes in each module are in common bw ref and test
-
-
-
-
-#### GO BACK AND RE-OBTAIN datExpr as female
-load(file = "02_input_data/sfon_wgcna_save_point_step8.Rdata")
-# female data
+## Rename datExpr (female, filtered)
 datExpr.fem <- datExpr
-dim(datExpr.fem) # should be 32 samples
+dim(datExpr.fem)
 
-load(file = "02_input_data/datExpr0.male.low.expr.filt")
-datExpr.mal <- datExpr0.male.low.expr.filt
-dim(datExpr.mal) # should be 52 samples, and has all genes
-
-# note, since we loaded the step8 save point (from female), the most connected genes will be from female
-# need to make sure about this however!!!
-
-# set up the multi-set expression data and corresponding module colors
-# As the female data contains the reference modules, carry forward the analysis of the 25000 most connected genes
-# and use this as the input
-datExpr0.fem.mat.top25000 <- datExpr.fem[,restConnectivity] # restConnectivity gives only top connected, #datExpr0 gives only QC filtered samples
+# Limit to only the top connected genes (previously identified)
+datExpr0.fem.mat.top25000 <- datExpr.fem[,restConnectivity]
 dim(datExpr0.fem.mat.top25000)
 
+# Set up multi-expression data with module colors from female
 setLabels = c("Female", "Male")
 multiExpr = list(Female = list(data = datExpr0.fem.mat.top25000), Male = list(data = datExpr0.male.low.expr.filt))
 # note: currently male is filtered on low expression specifically
@@ -550,12 +522,7 @@ goodSamplesGenes(datExpr0.male.low.expr.filt)
 
 multiColor = list(Female = mergedColors)
 
-# Test for module preservation
-?modulePreservation
-# For each reference-test pair, the function only uses genes 
-# that are in common between the reference and test set. 
-# Columns are matched by column names, so column names must be valid.
-
+#### 10.b. Test for module preservation ####
 system.time( {
   mp = modulePreservation(multiExpr, multiColor,
                           referenceNetworks = 1,
@@ -566,11 +533,11 @@ system.time( {
 } )
 
 
-save(mp, file = "04_results/modulePreservation.RData")
+# save(mp, file = "04_results/modulePreservation.RData")
 ## reload object
 # load(file = "04_results/modulePreservation.RData")
 
-#### 10.b. Analyze and visualize module preservation ####
+#### 10.c. Analyze and visualize module preservation ####
 # Isolate obs stats & Z scores
 ref = 1
 test = 2
@@ -587,7 +554,7 @@ print( cbind(statsObs[, c("medianRank.pres", "medianRank.qual")],
 
 mod.pres.table <- as.data.frame(cbind(statsObs[, c("medianRank.pres", "medianRank.qual")],
                                       signif(statsZ[, c("Zsummary.pres", "Zsummary.qual")], 2)) )
-write.csv(mod.pres.table, file = "04_results/mod_perservation_table.csv")
+# write.csv(mod.pres.table, file = "04_results/mod_perservation_table.csv")
 
 
 # Set up plot of MedianRank.pres (preservation) & Zsummary.pres for fem mods ~ mod size
@@ -638,9 +605,7 @@ for (p in 1:2)
 # save out as 10 x 6
 
 
-# Note: There is info in tutorial to inspect whether some modules are driven by outlier samples
-
-#### 10.c. Plot other statistics in one plot ####
+#### 10.d. Plot other statistics in one plot ####
 # Density and connectivity statistics
 
 # Re-initialize module color labels and sizes
@@ -699,6 +664,4 @@ legend(x = "center", y = "center"
 
 # save out as 12 x 10
 
-save.image(file = "02_input_data/completed_step10.RData")
-
-
+# save.image(file = "02_input_data/completed_step10.RData")
