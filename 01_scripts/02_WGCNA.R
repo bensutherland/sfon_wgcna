@@ -23,8 +23,8 @@ require("edgeR")
 
 # Logan & Xavier
 setwd("~/Documents/10_bernatchez/01_sfon_eqtl/sfon_wgcna/")
-enableWGCNAThreads(nThreads = 7) # Logan
-# enableWGCNAThreads(nThreads = 14) # Xavier
+#enableWGCNAThreads(nThreads = 7) # Logan
+enableWGCNAThreads(nThreads = 14) # Xavier
 
 # Important setup for loading expression data
 options(stringsAsFactors = FALSE) #IMPORTANT SETTING
