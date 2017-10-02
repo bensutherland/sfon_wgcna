@@ -9,8 +9,8 @@ load(file = "02_input_data/sfon_wgcna_setup.RData")
 #### User: choose working subset ####
 ## Choose reference set to build modules
 # choose among "female", "male" and "AC" for comparisons
-REF <- "female"
-SEC <- "male"
+REF <- "male"
+SEC <- "AC"
 
 dim(datExpr.list[[REF]])
 datExpr0 <- datExpr.list[[REF]]
@@ -389,9 +389,18 @@ dev.off()
 #### 8.a. Identify trait(s) of interest ####
 names(datTraits) # Define variable osmo.delta containing the osmo.delta column of datTrait
 
-# female
-TOI.names <- c("weight.g_0709", "sp.growth.rateT1.T3", "condit.fact_T2", "hep.som.ind"
-               , "cort.delta", "osmo.delta", "chlor.delta", "fem.egg.diam")
+TOI.fem <- c("weight.g_0709", "sp.growth.rateT1.T3", "condit.fact_T2", "hep.som.ind"
+             , "cort.delta", "osmo.delta", "chlor.delta", "fem.egg.diam")
+TOI.male <- c("weight.g_0709", "sp.growth.rateT1.T3", "condit.fact_T2", "hep.som.ind"
+              , "cort.delta", "osmo.delta", "chlor.delta", "male.sperm.conc","male.sperm.diam")
+
+TOI.list <- list(female = TOI.fem, male = TOI.male, AC = "no.info")
+names(TOI.list)
+#TOI.list[["female"]]
+#TOI.list[["male"]]
+
+# Obtain TOI names for the REF data
+TOI.names <- TOI.list[[REF]]
 
 # Create data.frame of traits of interest
 TOI = as.data.frame(datTraits[TOI.names])
@@ -560,13 +569,18 @@ dim(datExpr.REF)
 datExpr0.REF.mat.top25000 <- datExpr.REF[,restConnectivity]
 dim(datExpr0.REF.mat.top25000)
 
+goodSamplesGenes(datExpr0.REF.mat.top25000)
+goodSamplesGenes(datExpr0.SEC.low.expr.filt)
+
+# temporary fix for Arctic Charr
+QC.samples <- which(goodSamplesGenes(datExpr0.SEC.low.expr.filt)$goodSamples) # which samples to keep
+datExpr0.SEC.low.expr.filt <- datExpr0.SEC.low.expr.filt[QC.samples,]
+goodSamplesGenes(datExpr0.SEC.low.expr.filt)
+
 # Set up multi-expression data with module colors from female
 setLabels = c(REF, SEC)
 multiExpr = list(REF = list(data = datExpr0.REF.mat.top25000), SEC = list(data = datExpr0.SEC.low.expr.filt))
 # note: currently SEC is filtered on low expression specifically
-
-goodSamplesGenes(datExpr0.REF.mat.top25000)
-goodSamplesGenes(datExpr0.SEC.low.expr.filt)
 
 multiColor = list(REF = mergedColors)
 
