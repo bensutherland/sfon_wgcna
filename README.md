@@ -72,15 +72,10 @@ First make a blast database with the unwrapped reference transcriptome:
 Input: unwrapped ref transcriptome fasta, file with 'all_accn_names.txt'       
 Produces 'blast_output.txt'   
 
-Next need to use 'runall.sh' but re-code that does not assume the first best hit would be to itself, as these have been removed.    
+Next need to use 'runall.sh' steps but re-code that does not assume the first best hit would be to itself, as these have been removed.    
 
-
+This will probably require automation bash script to perform the necessary steps.    
 Once this is constructed, the paralog pairs identified can be associated with the object from 3.4 export above.    
 
-
-
-
-
-
-Next, a script must be written to identify whether paralogs are in the same or different cluster, then plotted number same vs number different and tested statistically if necessary.     
+As a final step, a script must be written to identify whether paralogs are in the same or different cluster, then plotted number same vs number different and tested statistically if necessary.     
 
