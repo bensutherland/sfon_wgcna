@@ -1,61 +1,73 @@
-# Identify which transcripts belong to contiguous blocks and identify unique blocks
+# This script identifies putative unique genes from a reference transcriptome
+# that has been aligned against a reference genome to produce a bed file
+
+#rm(list=ls())
 
 # Set working directory
 setwd("~/Documents/10_bernatchez/10_paralogs")
 
-# Import data
+#### 0. Import data ####
+# Ref txome against genome bed file
 data <- read.table(file = "sfontinalis_contigs_unwrap_v_ICSASG_v2_q30_sorted.bed")
+colnames(data) <- c("target.contig", "start", "end", "transcript", "score", "sense")
+head(data)
 data <- data[,c(1:4)]
-colnames(data) <- c("target.contig","start","end","transcript")
-str(data)
 
-
-# add shared gene column to populate with counter
+# Add empty vector to be populated with 'unique gene' counter
 shared.gene <- rep(NA, times=nrow(data)) 
 data <- cbind(data, shared.gene)
 str(data)
 
+#### 1. Link contiguous transcripts into genes ####
+
 # testing
+#data.bck <- data 
+#data <- data.bck
 #data <- data[1:200,]
 
-
 ### Set nulls
-chr <- NULL; prev.chr <- NULL
-start <- NULL ; prev.start <- NULL
-end <- NULL ; prev.end <- NULL
-output <- NULL
+chr <- NULL; prev.chr <- NULL; start <- NULL ; prev.start <- NULL
+end <- NULL ; prev.end <- NULL; output <- NULL
 
-# Set up for false start
-prev.chr <- 1
-prev.end <- 0
+# Set up in case there is no initial values
+prev.chr <- 1 ; prev.end <- 0
 
-# Set counter
+# Initialize counter
 counter <- 1
 
 # Loop
 for(i in 1:nrow(data)){
   
-  # set the current variables for this round
+  ## Set the current variables for this round
   chr <- data$target.contig[i]
   start <- data$start[i]
   end <- data$end[i]
   
-  # add redundant statement if same chr and start before prev end
+  # debugging
+  print(c(i, end))
+  
+  # add redundant indicator if transcript aligns to same chr, and starts before the previous end
   if(chr == prev.chr && start < prev.end ){
     data$shared.gene[i] <- counter
-    print("redundant")
-  } else {
-    counter <- counter + 1
-    data$shared.gene[i] <- counter
-    print("new.gene")
     
-    # if not redundant, set previous variables
+    # Find maximum end for this shared.gene
+    prev.end <- max(data[which(data$shared.gene==counter), "end"])
+    print(prev.end)
+    
+  } else {
+    # increase the counter to signify a new 'shared.gene'
+    counter <- counter + 1
+    # and give this new 'shared.gene' value to this transcript
+    data$shared.gene[i] <- counter
+    # Then set new 'previous' variables
     prev.chr <- chr
     prev.start <- start
     prev.end <- end
   }
 }
 
+
+# Write out results
 write.table(x = data
             , file = "sfontinalis_contigs_unwrap_v_ICSASG_v2_q30_sorted_w_redund_info.bed"
             , quote = F
@@ -88,14 +100,19 @@ data.lengths.sorted.choose <- cbind(data.lengths.sorted, is.present )
 
 
 
-
+############# IMPORT GENE EXPRESSION OBJECT ###########
 # Import the wgcna object (female)
 geneinfo <- read.delim2(file = "female_geneInfo_added_annot.txt", header = T)
 colnames(geneinfo)
 head(geneinfo)
 
+# Import the wgcna object (male)
+geneinfo <- read.delim2(file = "male_geneInfo_added_annot.txt", header = T)
+colnames(geneinfo)
+head(geneinfo)
+
 #### Find best one to keep
-head(data.lengths.sorted, n = 10)
+#head(data.lengths.sorted, n = 10)
 
 # which transcripts were expressed?
 colnames(geneinfo)
@@ -161,11 +178,83 @@ head(result)
 dim(result)
 length(unique.genes)
 
-write.table(x = result, file = "single_transcript_per_gene.txt", quote = F, col.names = T, row.names = F, sep = "\t")
+# write.table(x = result, file = "single_transcript_per_gene.txt", quote = F, col.names = T, row.names = F, sep = "\t")
+write.table(x = result, file = "single_transcript_per_gene_male.txt", quote = F, col.names = T, row.names = F, sep = "\t")
+
+
+##### Pie Charts #####
+# Obtain number of transcripts per chromosome per module
+#results <- read.delim2(file = "single_transcript_per_gene.txt", header = T, sep = "\t")
+results <- read.delim2(file = "single_transcript_per_gene_male.txt", header = T, sep = "\t")
+head(results)
+
+modules <- unique(result$moduleColor)
+
+
+# how to subset
+m <- "grey"
+head(results[results$moduleColor %in% m,])
+
+# what chromosomes are the main ones?
+#results$
+
+# This counts up how many instances of each chromosome within the current module
+#aggregate(x = current.module.set$transcript, by = list(target = current.module.set$target.contig), FUN = length)
+
+# First characterize the number across all of the genes
+background.numbers<- aggregate(x = results$transcript, by = list(target = results$target.contig), FUN = length)
+
+# sort
+background.numbers.sorted <- background.numbers[with(background.numbers, order(background.numbers$x, decreasing=T)), ]
+head(background.numbers.sorted, n = 30)
+# so the first 29 of those are the chromosomes...
+
+chromosomes.of.interest <- background.numbers.sorted$target[1:29]
+
+# make a pie ! (baseline)
+slices <- c(background.numbers.sorted$x[1:29])
+lbls <- background.numbers.sorted$target[1:29]
+pct <- round(slices/sum(slices)*100)
+lbls2 <- paste(lbls,"%", pct)
+
+pie(x = slices, labels = lbls2, col = rainbow(length(lbls2)), main = "Baseline")
+
+
+# What is the number of transcripts within module that are the same chromosome
+current.module.set <- NULL; result.list <- list() ; test.list <- list()
+#
+for(m in modules){
+  # subset dataset for each module color
+  current.module.set  <- results[results$moduleColor %in% m,]
+  print(dim(current.module.set))
+  
+  # now check how many copies of each 'chromosome.of.interest'
+  for(c in chromosomes.of.interest){
+    this.chr.count.this.mod <- length(grep(pattern = c, x = current.module.set$target.contig))
+    test.list[[m]] <- c(test.list[[m]], this.chr.count.this.mod)
+    #names(test.list[[m]] <- chromosomes.of.interest)
+    }
+}
 
 
 
-### Get proportions of each
+### Next will be to produce charts of all of those..
+for(i in 2:length(test.list)){
+  slices <- test.list[[i]]
+  lbls <- chromosomes.of.interest
+  pct <- round(slices/sum(slices)*100)
+  lbls2 <- paste(lbls,"%", pct, sep = "")
+  module.this.round <- names(test.list)[i]
+  
+  pie(x = slices, labels = lbls2, col = rainbow(length(lbls2))
+      , main = paste(module.this.round, "with", sum(slices), "genes"))
+  # also add to the title the number of genes in the module
+}
+
+
+str(result.list)
+result.list[["darkred"]]
+
 
 
 
@@ -237,7 +326,7 @@ write.table(x = result, file = "single_transcript_per_gene.txt", quote = F, col.
 
 ### FRAGMENTS
 # how many unique gene designations?
-length(unique(x = data.lengths$shared.gene))
-
-max(data.lengths$shared.gene)
-# NULLS
+# length(unique(x = data.lengths$shared.gene))
+# 
+# max(data.lengths$shared.gene)
+# # NULLS
