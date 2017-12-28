@@ -188,7 +188,7 @@ write.table(x = result, file = "single_transcript_per_gene_male.txt", quote = F,
 results <- read.delim2(file = "single_transcript_per_gene_male.txt", header = T, sep = "\t")
 head(results)
 
-modules <- unique(result$moduleColor)
+modules <- unique(results$moduleColor)
 
 
 # how to subset
@@ -210,23 +210,42 @@ head(background.numbers.sorted, n = 30)
 # so the first 29 of those are the chromosomes...
 
 chromosomes.of.interest <- background.numbers.sorted$target[1:29]
+chromosomes.of.interest <- gsub(pattern = "NC_0273|\\.1", replacement = "", x = chromosomes.of.interest, perl = T)
 
-# make a pie ! (baseline)
-slices <- c(background.numbers.sorted$x[1:29])
-lbls <- background.numbers.sorted$target[1:29]
-pct <- round(slices/sum(slices)*100)
-lbls2 <- paste(lbls,"%", pct)
 
-pie(x = slices, labels = lbls2, col = rainbow(length(lbls2)), main = "Baseline")
+# Set up plotting
+# colors
+#install.packages("RColorBrewer")
+library("RColorBrewer")
 
+cols1 <- brewer.pal(n = 9, name = "Set1")
+cols2 <- brewer.pal(n = 8, name = "Set2")
+cols3 <- brewer.pal(n = 10, name = "Set3")
+cols4 <- brewer.pal(n = 11, name = "Spectral")
+palette <- c(cols1,cols2,cols3,cols4)
+
+# Set dimensions
+par(mfrow=c(1,1), mar = c(0,4,2,0), cex = 0.6)
+
+# # Make a baseline pie (not sep by module)
+# slices <- c(background.numbers.sorted$x[1:29])
+# lbls <- background.numbers.sorted$target[1:29]
+# pct <- round(slices/sum(slices)*100)
+# lbls2 <- paste(lbls,"%", pct)
+# 
+# pie(x = slices, labels = lbls2, col = palette[1:length(lbls2)], main = "Baseline")
+# 
 
 # What is the number of transcripts within module that are the same chromosome
 current.module.set <- NULL; result.list <- list() ; test.list <- list()
+info.set <- NULL ; info.set.all <- NULL
 #
 for(m in modules){
   # subset dataset for each module color
   current.module.set  <- results[results$moduleColor %in% m,]
-  print(dim(current.module.set))
+  print(c("number transcript in this module is" , nrow(current.module.set)))
+  info.set <- cbind(m, nrow(current.module.set))
+  info.set.all <- rbind(info.set.all, info.set)
   
   # now check how many copies of each 'chromosome.of.interest'
   for(c in chromosomes.of.interest){
@@ -236,9 +255,28 @@ for(m in modules){
     }
 }
 
+info.set.all # gives info on which modules contain how many transcripts
+sum(as.numeric(info.set.all[c(-1,-3),2])) # to count up
 
 
-### Next will be to produce charts of all of those..
+### Produce Charts
+
+#todo: use module color? 
+#todo: convert NC_XX to chromosome number
+
+pdf(file = "modules_by_chromosomes.pdf", width= 12, height = 10)
+par(mfrow=c(5,6), mar = c(0,4,2,0), cex = 0.6)
+
+# Make a baseline pie (not sep by module)
+slices <- c(background.numbers.sorted$x[1:29])
+lbls <- background.numbers.sorted$target[1:29]
+lbls <- gsub(pattern = "NC_0273|\\.1", replacement = "", x = lbls, perl = T)
+pct <- round(slices/sum(slices)*100)
+lbls2 <- paste(lbls,"%", pct)
+
+pie(x = slices, labels = lbls2, col = palette[1:length(lbls2)], main = "Baseline")
+
+# Then separate by modules
 for(i in 2:length(test.list)){
   slices <- test.list[[i]]
   lbls <- chromosomes.of.interest
@@ -246,10 +284,12 @@ for(i in 2:length(test.list)){
   lbls2 <- paste(lbls,"%", pct, sep = "")
   module.this.round <- names(test.list)[i]
   
-  pie(x = slices, labels = lbls2, col = rainbow(length(lbls2))
+  pie(x = slices, labels = lbls2, col = palette[1:length(lbls2)]
       , main = paste(module.this.round, "with", sum(slices), "genes"))
   # also add to the title the number of genes in the module
 }
+
+dev.off()
 
 
 str(result.list)
