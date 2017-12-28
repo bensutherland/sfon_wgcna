@@ -1,25 +1,30 @@
-# This script identifies putative unique genes from a reference transcriptome
-# that has been aligned against a reference genome to produce a bed file
+# Identify putative unique genes from a reference transcriptome
+# by using a reference genome
+# input: bed file; NOTE: MUST BE SORTED BY "target.contig" THEN "start"
 
-#rm(list=ls())
+# rm(list=ls())
 
 # Set working directory
 setwd("~/Documents/10_bernatchez/10_paralogs")
 
+# Set filenames
+bed.filename <- "sfontinalis_contigs_unwrap_v_ICSASG_v2_q30_sorted.bed"
+transcript.lengths.filename <- "sfontinalis_contigs_unwrap_seq_lengths.txt"
+# Also need: male_geneInfo_added_annot.txt OR female_geneInfo_added_annot.txt 
+
 #### 0. Import data ####
-# Ref txome against genome bed file
-data <- read.table(file = "sfontinalis_contigs_unwrap_v_ICSASG_v2_q30_sorted.bed")
+# Import bed file (ref txome against genome)
+data <- read.table(file = bed.filename)
 colnames(data) <- c("target.contig", "start", "end", "transcript", "score", "sense")
 head(data)
 data <- data[,c(1:4)]
 
 # Add empty vector to be populated with 'unique gene' counter
-shared.gene <- rep(NA, times=nrow(data)) 
+shared.gene <- rep(NA, times=nrow(data))
 data <- cbind(data, shared.gene)
 str(data)
 
 #### 1. Link contiguous transcripts into genes ####
-
 # testing
 #data.bck <- data 
 #data <- data.bck
@@ -29,13 +34,13 @@ str(data)
 chr <- NULL; prev.chr <- NULL; start <- NULL ; prev.start <- NULL
 end <- NULL ; prev.end <- NULL; output <- NULL
 
-# Set up in case there is no initial values
+# Prevent error due to NULLs on initial run
 prev.chr <- 1 ; prev.end <- 0
 
 # Initialize counter
 counter <- 1
 
-# Loop
+# Identify which genes are in continuous blocks
 for(i in 1:nrow(data)){
   
   ## Set the current variables for this round
@@ -44,13 +49,13 @@ for(i in 1:nrow(data)){
   end <- data$end[i]
   
   # debugging
-  print(c(i, end))
+  #print(c(i, end))
   
-  # add redundant indicator if transcript aligns to same chr, and starts before the previous end
+  # add same ID if transcript aligns to same chr and starts before the prev. end
   if(chr == prev.chr && start < prev.end ){
     data$shared.gene[i] <- counter
     
-    # Find maximum end for this shared.gene
+    # Find maximum value in "end" column for this specific shared.gene ID
     prev.end <- max(data[which(data$shared.gene==counter), "end"])
     print(prev.end)
     
@@ -59,6 +64,7 @@ for(i in 1:nrow(data)){
     counter <- counter + 1
     # and give this new 'shared.gene' value to this transcript
     data$shared.gene[i] <- counter
+    
     # Then set new 'previous' variables
     prev.chr <- chr
     prev.start <- start
@@ -77,90 +83,85 @@ write.table(x = data
 # View data
 head(data)
 
+#### 2. Incorporate fasta record lengths ####
+
 # Attach fasta record lengths to this file
 # Bring in fasta record length file
-transcript.lengths <- read.table(file = "sfontinalis_contigs_unwrap_seq_lengths.txt"
+transcript.lengths <- read.table(file = transcript.lengths.filename
                             , col.names = c("transcript", "length.bp"))
 str(transcript.lengths)
 
-# merge
-data.lengths <- merge(x = data, y = fasta.lengths, by = "transcript", sort = F)
+# Merge lengths file with non-redundant transcript file
+data.lengths <- merge(x = data, y = transcript.lengths, by = "transcript", sort = F)
 
 str(data.lengths)
 colnames(data.lengths)
 head(data.lengths)
 
-# sort data.lengths
+# Sort data.lengths by shared.gene ID then by length
 data.lengths.sorted <- data.lengths[with(data.lengths, order(data.lengths$shared.gene, data.lengths$length.bp
                           , decreasing= T)), ]
 
-# Add column
+# Add empty vector to be populated with whether the gene is expressed or not in the expression data (to be imported)
 is.present <- rep("NA", times = length(data.lengths.sorted$transcript))
 data.lengths.sorted.choose <- cbind(data.lengths.sorted, is.present )
 
+#### 3. Import gene expression object ####
+# Choose sex of coexpression modules
+#sex <- "female"
+sex <- "male"
 
+# Create filename
+geneInfo.filename <- paste(sex, "_geneInfo_added_annot.txt", sep = "")
 
-############# IMPORT GENE EXPRESSION OBJECT ###########
-# Import the wgcna object (female)
-geneinfo <- read.delim2(file = "female_geneInfo_added_annot.txt", header = T)
+# Import WGCNA object
+geneinfo <- read.delim2(file = geneInfo.filename, header = T)
 colnames(geneinfo)
-head(geneinfo)
 
-# Import the wgcna object (male)
-geneinfo <- read.delim2(file = "male_geneInfo_added_annot.txt", header = T)
-colnames(geneinfo)
-head(geneinfo)
-
-#### Find best one to keep
-#head(data.lengths.sorted, n = 10)
-
-# which transcripts were expressed?
-colnames(geneinfo)
+# Determine which transcripts were expressed in the selected WGCNA object
+# extract necessary data (transcript ID and module Color)
 expressed.transcripts <- geneinfo[,c("transcript_id","moduleColor")]
 head(expressed.transcripts)                                 
 colnames(expressed.transcripts) <- c("transcript", "moduleColor")
                                      
+# Merge with the rest of the data (keeping the data file for those that don't have an expr transcript)
 all.data <- merge(x = data.lengths.sorted.choose, y = expressed.transcripts, by = "transcript", all.x = T)
 dim(all.data)
 head(all.data)
 
-# sort again
+# Sort again, by shared.gene ID, then by length
 all.data <- all.data[with(all.data, order(all.data$shared.gene, all.data$length.bp
                                                              , decreasing= T)), ]
 head(all.data, n = 10)
 str(all.data)
 
-
-# Add a generic is.present column to the all.data file to sort upon without sorting on alphabetized colors in moduleColors
-all.data$is.present <- as.character(all.data$is.present) # make the 'is.present' variable a character
-str(all.data)
-
-all.data[is.na(all.data$moduleColor)==F, "is.present"] <- "yes" # if present, say yes
-all.data[is.na(all.data$moduleColor)==T, "is.present"] <- "z" # if present, say z
+# Use the is.present column, first make it a character
+all.data$is.present <- as.character(all.data$is.present)
+# Then if there is a module color (not NA), give it 'yes' and if no module color (NA), give it 'z'
+# The z is used for ease of alphabetical ordering
+all.data[is.na(all.data$moduleColor)==F, "is.present"] <- "yes" 
+all.data[is.na(all.data$moduleColor)==T, "is.present"] <- "no" 
 head(all.data)
 
-# Sort again, this time by gene and is.present
+# Sort again, by gene, is.present, then length
 all.data <- all.data[with(all.data, 
-                          order(all.data$shared.gene, all.data$is.present, all.data$length.bp, all.data$length.bp)
+                          order(all.data$shared.gene, all.data$is.present, all.data$length.bp, decreasing = T)
                           ), ]
-# this should make it so that the genes with moduleColor are selected first 
-head(all.data, n = 10)
-dim(all.data)
+tail(all.data, n = 10)
 
-
-# Make a smaller version for testing
+#Testing
 # all.data <- all.data[1:20,]
 # head(all.data)
 # dim(all.data)
 
-
-#### Obtain a single record per 'gene' ####
+#### 4. Obtain one record per shared.gene ID ####
 # Set nulls
 goi <- NULL; section <- NULL; result <- NULL
 
-# make a vector of unique gene names
+# Make a vector of unique gene names
 unique.genes <- unique(all.data$shared.gene)
 
+# 
 for(i in unique.genes){
   # identify the name of this round's goi
   goi <- unique.genes[i]
@@ -168,18 +169,23 @@ for(i in unique.genes){
   # select the rows that are within the goi
   section <- all.data[all.data$shared.gene==goi,]
   
-  # take only the first one (because it's been sorted this works for the best)
+  # take only the first one (because it's been sorted this works)
   result <- rbind(result, head(section, n = 1))
 }
 
 # This provides a dataset of all the top genes per goi.
 
 head(result)
-dim(result)
-length(unique.genes)
+length(result$transcript)
+length(unique(result$transcript)) # issue here
 
-# write.table(x = result, file = "single_transcript_per_gene.txt", quote = F, col.names = T, row.names = F, sep = "\t")
-write.table(x = result, file = "single_transcript_per_gene_male.txt", quote = F, col.names = T, row.names = F, sep = "\t")
+# Save out
+out.filename <- paste(sex, "_single_transcript_per_gene.txt", sep = "")
+write.table(x = result, file = out.filename, quote = F, col.names = T, row.names = F, sep = "\t")
+
+
+
+
 
 
 ##### Pie Charts #####
