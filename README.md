@@ -56,7 +56,9 @@ In this R script, you will:
 2. Associate fasta accession lengths to the 'unique gene' identifier.  
 3. Import a sex-specific geneInfo object that contains information about the clusters to which each gene belongs.     
 4. Select a single transcript to retain per 'unique gene' identifier in order of a) is expressed and; b) take longest. Possible to export list of single transcripts with their clusters here.   
-5. Plot each clusters' proportions of each Atlantic Salmon chromosome.    
+
+This data is output as a table, such as `male_single_transcript_per_gene.txt`.     
+Then use the R script `plot_mod_chr_comp.R` to plot modules' chromosomal composition.     
 
 ## 4. Identify paralogs 
 A reciprocal best hit blast has been constructed to blast same-on-same but to remove the focal transcript from the blast so that the first transcript can be chosen as the 'best hit' without hitting itself. 
