@@ -35,6 +35,8 @@ These steps are performed in R using the WGCNA package. See detailed instruction
 ## 4. Identify one isoform per gene in reference transcriptome using a reference genome ##
 This section will allow you to, given a reference transcriptome and genome input, identify which transcripts map and overlap in position on the reference genome. Then it allows you to retain only one transcript per contiguous map mapping transcript unit. (no guarantees, experimental)          
 
+Required: reference genome, reference transcriptome   
+
 First, index reference genome gmap, e.g. with S. salar:       
 `gmap_build -d ICSASG_v2 -D /home/ben/Documents/z-ssal_genome/ GCF_000233375.1_ICSASG_v2_genomic.fna`
 
@@ -55,7 +57,9 @@ Fifth, find sequence lengths of all transcripts:
 `cat sfontinalis_contigs_unwrap.fasta | awk '$0 ~ ">" {print c; c=0;printf substr($0,2,100) "\t"; } $0 !~ ">" {c+=length($0);} END { print c; }' >  sfontinalis_contigs_unwrap_seq_lengths.txt`
 This was from: http://www.danielecook.com/generate-fasta-sequence-lengths/
 
-Sixth, use R script to identify a single transcript per continuous mapping transcript segment: `id_genes_from_ref_txome_w_ref_genome.R`. The steps required are as follows:      
+Sixth, use R script to identify a single transcript per continuous mapping transcript segment: `id_genes_from_ref_txome_w_ref_genome.R`.    
+This Rscript will require: a bed file (from above), a transcript lengths file, a <sex>_geneInfo_added_annot.txt file.         
+ The steps required are as follows:      
 1. Link transcripts into contiguous overlapping segments, each of which will be considered one 'gene'    
 2. Associate transcript lengths to the 'unique gene' identifier.  
 3. Import a sex-specific geneInfo object (see above) that contains information about the clusters to which each gene belongs.     
