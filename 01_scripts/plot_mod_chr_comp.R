@@ -19,56 +19,71 @@ in.filename <- paste(sex, "_single_transcript_per_gene.txt", sep = "")
 results <- read.delim2(file = in.filename, header = T, sep = "\t")
 head(results)
 
-# remove NA
+# remove row NA
 results <- results[-c(which(is.na(results$transcript))),]
 
-#### 01. Input data and determine genes per chromosome ####
+results$moduleColor <- as.character(results$moduleColor)
+
+#### 01a. Set up: module names ####
+
+# what are the module names?
+unique(results$moduleColor)
+
+# rename moduleColor <NA> to low.corr, as these were not included in the WGCNA approach
+results[which(is.na(results$moduleColor)), "moduleColor"] <- "low.corr"
 
 # Define module names
 modules <- unique(results$moduleColor)
 
-# What chromosomes are the main ones?
-# Find how many genes are found in each scaffold/chromosome
+
+
+
+
+
+
+#### 01b. Set up: determine main chromosomes #####
+# Count genes per genomic scaffold
 background.numbers <- aggregate(x = results$transcript, by = list(target = results$target.contig), FUN = length)
+names(background.numbers) <- c("target", "num.genes")
 
 # Sort by largest containing chromosomes
-background.numbers.sorted <- background.numbers[with(background.numbers, order(background.numbers$x, decreasing=T)), ]
+background.numbers.sorted <- background.numbers[with(background.numbers, order(background.numbers$num.genes, decreasing=T)), ]
 head(background.numbers.sorted, n = 30)
 # Clearly, the first 29 of those are the chromosomes...
 
+# Determine the main chromosomes of the genome
 chromosomes.of.interest <- background.numbers.sorted$target[1:29]
 
+#### 01c. Baseline: genes per chromosome of interest ####
+background.numbers.sorted[background.numbers.sorted$target %in% chromosomes.of.interest,]
 
-#### 02. Determine proportions of chromosomes per module #### 
 
-# Determine the number of genes in each chromosome in each module
-current.module.set <- NULL; result.list <- list() ; test.list <- list()
+#### 02. Count genes per chr for each module #### 
+
+# Per module, count genes in each chromosome of interest
+current.module.set <- NULL; result.list <- list() ; genes.per.chr.per.mod.list <- list()
 info.set <- NULL ; info.set.all <- NULL
 
 for(m in modules){
-  # subset dataset for each module color
-  current.module.set  <- results[results$moduleColor %in% m,]
+  # Subset results per module, write to object 'current.module.set'
+  current.module.set  <- results[results$moduleColor %in% m, ]
   #print(c("number transcript in this module is" , nrow(current.module.set)))
   
+  # Collect information on the number of genes in this module and module name to use later
   info.set <- cbind(m, nrow(current.module.set)) # combine the name of the module with the number of transcripts
-  info.set.all <- rbind(info.set.all, info.set) # prepare this for output later
+  info.set.all <- rbind(info.set.all, info.set)
   
-  # Within this module, check how many copies of each 'chromosome.of.interest'
+  # Within module, how many genes per 'chromosome.of.interest'
   for(c in chromosomes.of.interest){
-    this.chr.count.this.mod <- length(grep(pattern = c, x = current.module.set$target.contig)) # for each c (chromosome)
-    test.list[[m]] <- c(test.list[[m]], this.chr.count.this.mod)
-    #names(test.list[[m]] <- chromosomes.of.interest)
+    this.chr.count.this.mod <- length(grep(pattern = c, x = current.module.set$target.contig))
+    genes.per.chr.per.mod.list[[m]] <- c(genes.per.chr.per.mod.list[[m]], this.chr.count.this.mod)
+    #names(genes.per.chr.per.mod.list[[m]] <- chromosomes.of.interest)
   }
 }
 
+# summary data:
 info.set.all # gives info on which modules contain how many transcripts
 sum(as.numeric(info.set.all[c(-1,-3),2])) # to count up
-
-# Collect data
-# background data
-background.numbers.sorted[background.numbers.sorted$target %in% chromosomes.of.interest,]
-
-# foreground data
 
 
 
@@ -94,8 +109,8 @@ sex.par <- list() ; sex.par[["female"]] <- NULL; sex.par[["male"]] <- c(7,4)
 par(mfrow=sex.par[[sex]], mar = c(0,4,2,0), cex = 0.6)
 
 
-# Make a baseline pie (not sep by module)
-slices <- c(background.numbers.sorted$x[1:29])
+# Make a baseline pie chart (not sep by module)
+slices <- c(background.numbers.sorted$num.genes[1:29])
 lbls <- background.numbers.sorted$target[1:29]
 lbls <- gsub(pattern = "NC_0273|\\.1", replacement = "", x = lbls, perl = T)
 pct <- round(slices/sum(slices)*100)
@@ -105,15 +120,15 @@ pie(x = slices, labels = lbls2, col = palette[1:length(lbls2)]
     , main = paste("Baseline with", sum(slices), "genes"))
 
 # Then plot separately per module
-for(i in 2:length(test.list)){
-  slices <- test.list[[i]]
+for(i in 2:length(genes.per.chr.per.mod.list)){
+  slices <- genes.per.chr.per.mod.list[[i]]
   slices <- slices[slices!=0] # don't plot any slices that are empty (required with THIS)
   # lbls <- chromosomes.of.interest
   lbls <- gsub(pattern = "NC_0273|\\.1", replacement = "", x = chromosomes.of.interest, perl = T)
   pct <- round(slices/sum(slices)*100)
   lbls2 <- paste(lbls,"-", pct, "%", sep ="")
   lbls2 <- lbls2[grep(pattern = "-0%", x = lbls2, invert = T)] # don't plot any labels when empty (required with THIS)
-  module.this.round <- names(test.list)[i]
+  module.this.round <- names(genes.per.chr.per.mod.list)[i]
   
   pie(x = slices, labels = lbls2, col = palette[1:length(lbls2)]
       , main = paste(module.this.round, "with", sum(slices), "genes"))
@@ -123,6 +138,36 @@ dev.off()
 
 
 ### Save out values
+# extract out gene counts from the list
+genes.per.chr.per.mod.list # this contains all info
+chromosomes.of.interest # this is the order of chromosomes
+
+output <- NULL; output.temp <- NULL
+for(i in 1:length(genes.per.chr.per.mod.list)){
+  output.temp <- genes.per.chr.per.mod.list[[i]]
+  output <- cbind(output, output.temp)
+}
+colnames(output) <- names(genes.per.chr.per.mod.list)
+rownames(output) <- chromosomes.of.interest
+
+head(output)
+
+# add a row sum column for baseline
+all.output <- cbind(output, rowSums(output))
+colnames(all.output)[ncol(all.output)] <- "baseline"
+
+all.output
+
+
+#### 04. Save values data
+# Write out results
+filename.output <- paste(sex, c("count_of_genes_per_chr_per_module.txt"), sep = "_")
+write.table(x = all.output
+            , file = filename.output
+            , quote = F
+            , sep = "\t"
+            , row.names = F)
+
 
 
 
