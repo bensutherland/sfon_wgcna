@@ -25,40 +25,50 @@ Output datafile can be found in `03_normalized_data/normalized_output_matrix.csv
 
 Note: original analysis separately generated male and female output and filtering. I don't think this is necessary, as in the next steps, the data can be subset by sex and re-filtered for low expression. The only place that may be negatively impacted is by using the TMM normalization on the sexes together, as we can expect there to be expression differences between these groups. For now will leave as is.
 
-## 2. WGCNA module building in females ##
-These steps are performed in R using the WGCNA package.
+## 2. Build WGCNA modules ##
+These steps are performed in R using the WGCNA package. See detailed instructions within `01_scripts/02_WGCNA.R`     
 
-## 3. Identify one isoform per gene in reference transcriptome using a reference genome ##
-First, index your reference genome for use with gmap, for example, here with S. salar.       
+## 3. Compare query expression data against reference modules ##
+These steps are performed in R using the WGCNA package. See detailed instructions within `01_scripts/03_WGCNA_BC_fem_mods_male_comp.R`     
+
+
+## 4. Identify one isoform per gene in reference transcriptome using a reference genome ##
+This section will allow you to, given a reference transcriptome and genome input, identify which transcripts map and overlap in position on the reference genome. Then it allows you to retain only one transcript per contiguous map mapping transcript unit. (no guarantees, experimental)          
+
+First, index reference genome gmap, e.g. with S. salar:       
 `gmap_build -d ICSASG_v2 -D /home/ben/Documents/z-ssal_genome/ GCF_000233375.1_ICSASG_v2_genomic.fna`
 
-Second, align against the reference genome
+Second, align transcripts to reference genome:
 `gmap -D /home/ben/Documents/z-ssal_genome/ICSASG_v2 -d ICSASG_v2 -f samse -n 0 -t 4 ./sfontinalis_contigs_unwrap.fasta > ./sfontinalis_contigs_unwrap_v_ICSASG_v2.sam 2> ./sfontinalis_contigs_unwrap_v_ICSASG_v2.sam.log`
 
-Filter based on quality and convert to bam    
+Third, filter mappings by mapq and convert to bam:    
 ```
 samtools view -bS -q 30 ./sfontinalis_contigs_unwrap_v_ICSASG_v2.sam > ./sfontinalis_contigs_unwrap_v_ICSASG_v2_q30.bam     
 samtools sort sfontinalis_contigs_unwrap_v_ICSASG_v2_q30.bam -o sfontinalis_contigs_unwrap_v_ICSASG_v2_q30_sorted.bam
 samtools index sfontinalis_contigs_unwrap_v_ICSASG_v2_q30_sorted.bam`
 ```
 
-Then finally create a bed file     
+Fourth, create a bed file     
 `bedtools bamtobed [OPTIONS] -i your_file.bam`
 
-Note: in case you need to find sequence lengths:    
+Fifth, find sequence lengths of all transcripts:    
 `cat sfontinalis_contigs_unwrap.fasta | awk '$0 ~ ">" {print c; c=0;printf substr($0,2,100) "\t"; } $0 !~ ">" {c+=length($0);} END { print c; }' >  sfontinalis_contigs_unwrap_seq_lengths.txt`
 This was from: http://www.danielecook.com/generate-fasta-sequence-lengths/
 
-This bed file will be used as an input to the following R script to identify a single transcript per putative gene:     
-`id_genes_from_ref_txome_w_ref_genome.R`     
-In this R script, you will:   
+Sixth, use R script to identify a single transcript per continuous mapping transcript segment: `id_genes_from_ref_txome_w_ref_genome.R`. The steps required are as follows:      
 1. Link transcripts into contiguous overlapping segments, each of which will be considered one 'gene'    
-2. Associate fasta accession lengths to the 'unique gene' identifier.  
-3. Import a sex-specific geneInfo object that contains information about the clusters to which each gene belongs.     
+2. Associate transcript lengths to the 'unique gene' identifier.  
+3. Import a sex-specific geneInfo object (see above) that contains information about the clusters to which each gene belongs.     
 4. Select a single transcript to retain per 'unique gene' identifier in order of a) is expressed and; b) take longest. Possible to export list of single transcripts with their clusters here.   
 
-This data is output as a table, such as `male_single_transcript_per_gene.txt`.     
-Then use the R script `plot_mod_chr_comp.R` to plot modules' chromosomal composition.     
+This data is output as a table, such as `<sex>_single_transcript_per_gene.txt`.     
+Move to next step to plot modules' chromosomal composition.     
+
+## 5. Compare representation by chromosome across modules ##
+Use Rscript to characterize the proportions of genes from each chromosome in the modules, and compare to the baseline of all genes, using the following script: `plot_mod_chr_comp.R`         
+Basically, this will determine which scaffolds are the chromosomes, what the baseline is in terms of number of genes from each chromosome, calculate this for each module, plot in pie charts and export to text the counts of genes from each chromosome in each module.    
+
+#todo: Apply Fisher's exact test and bonferonni correction.   
 
 ## 4. Identify paralogs 
 A reciprocal best hit blast has been constructed to blast same-on-same but to remove the focal transcript from the blast so that the first transcript can be chosen as the 'best hit' without hitting itself. 
