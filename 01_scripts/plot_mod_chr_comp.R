@@ -19,6 +19,9 @@ in.filename <- paste(sex, "_single_transcript_per_gene.txt", sep = "")
 results <- read.delim2(file = in.filename, header = T, sep = "\t")
 head(results)
 
+# remove NA
+results <- results[-c(which(is.na(results$transcript))),]
+
 #### 01. Input data and determine genes per chromosome ####
 
 # Define module names
@@ -61,6 +64,13 @@ for(m in modules){
 info.set.all # gives info on which modules contain how many transcripts
 sum(as.numeric(info.set.all[c(-1,-3),2])) # to count up
 
+# Collect data
+# background data
+background.numbers.sorted[background.numbers.sorted$target %in% chromosomes.of.interest,]
+
+# foreground data
+
+
 
 #### 03. Plot proportions of chr per mod ####
 # Set up plotting
@@ -77,7 +87,7 @@ palette <- c(cols1,cols2,cols3,cols4)
 # If single plotting
 par(mfrow=c(1,1), mar = c(0,4,2,0), cex = 0.6)
 
-# If composite plotting
+# Set up variables if composite plotting
 plot.filename <- paste(sex, "_modules_by_chromosomes.pdf")
 pdf(file = plot.filename, width= 12, height = 10)
 sex.par <- list() ; sex.par[["female"]] <- NULL; sex.par[["male"]] <- c(7,4)
@@ -110,6 +120,11 @@ for(i in 2:length(test.list)){
 }
 
 dev.off()
+
+
+### Save out values
+
+
 
 
 ### Leftover Code
