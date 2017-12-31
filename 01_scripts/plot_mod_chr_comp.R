@@ -52,7 +52,7 @@ background.numbers.sorted[background.numbers.sorted$target %in% chromosomes.of.i
 
 # Per module, count genes in each chromosome of interest
 current.module.set <- NULL; result.list <- list() ; genes.per.chr.per.mod.list <- list()
-info.set <- NULL ; info.set.all <- NULL
+info.set <- NULL ; info.set.all <- NULL ; chr.order  <- NULL
 
 for(m in modules){
   # Subset results per module, write to object 'current.module.set'
@@ -67,9 +67,11 @@ for(m in modules){
   for(c in chromosomes.of.interest){
     this.chr.count.this.mod <- length(grep(pattern = c, x = current.module.set$target.contig))
     genes.per.chr.per.mod.list[[m]] <- c(genes.per.chr.per.mod.list[[m]], this.chr.count.this.mod)
-    #names(genes.per.chr.per.mod.list[[m]] <- chromosomes.of.interest)
   }
 }
+
+chromosomes.of.interest
+
 
 # summary data:
 info.set.all # gives info on which modules contain how many transcripts
@@ -103,7 +105,7 @@ par(mfrow=sex.par[[sex]], mar = c(0,4,2,0), cex = 0.6)
 # Make a baseline pie chart (not sep by module)
 slices <- c(background.numbers.sorted$num.genes[1:29])
 lbls <- background.numbers.sorted$target[1:29]
-lbls <- gsub(pattern = "NC_0273|\\.1", replacement = "", x = lbls, perl = T)
+lbls <- gsub(pattern = "NC_0273|\\.1", replacement = "", x = lbls, perl = T) # shorten name
 pct <- round(slices/sum(slices)*100)
 lbls2 <- paste(lbls,"-", pct, "%", sep="")
 
@@ -111,14 +113,19 @@ pie(x = slices, labels = lbls2, col = palette[1:length(lbls2)]
     , main = paste("Baseline with", sum(slices), "genes"))
 
 # Then plot separately per module
-for(i in 2:length(genes.per.chr.per.mod.list)){
+for(i in 1:length(genes.per.chr.per.mod.list)){
   slices <- genes.per.chr.per.mod.list[[i]]
-  slices <- slices[slices!=0] # don't plot any slices that are empty (required with THIS)
+
   # lbls <- chromosomes.of.interest
   lbls <- gsub(pattern = "NC_0273|\\.1", replacement = "", x = chromosomes.of.interest, perl = T)
   pct <- round(slices/sum(slices)*100)
   lbls2 <- paste(lbls,"-", pct, "%", sep ="")
-  lbls2 <- lbls2[grep(pattern = "-0%", x = lbls2, invert = T)] # don't plot any labels when empty (required with THIS)
+  
+  # Remove empties
+  slices <- slices[slices!=0] # don't plot any slices that are empty
+  lbls2 <- lbls2[grep(pattern = "-0%", x = lbls2, invert = T)] # don't plot any labels when empty
+  
+  # Set up plot
   module.this.round <- names(genes.per.chr.per.mod.list)[i]
   
   pie(x = slices, labels = lbls2, col = palette[1:length(lbls2)]
