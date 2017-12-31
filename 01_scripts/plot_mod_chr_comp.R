@@ -157,7 +157,8 @@ write.table(x = all.output
             , file = filename.output
             , quote = F
             , sep = "\t"
-            , row.names = F)
+            , row.names = T
+            , col.names = NA)
 
 
 
