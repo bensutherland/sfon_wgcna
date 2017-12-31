@@ -7,10 +7,15 @@
 # Set working directory
 setwd("~/Documents/10_bernatchez/10_paralogs")
 
+# Set sex of coexpression modules
+sex <- "female"
+#sex <- "male"
+
 # Set filenames
 bed.filename <- "sfontinalis_contigs_unwrap_v_ICSASG_v2_q30_sorted.bed"
 transcript.lengths.filename <- "sfontinalis_contigs_unwrap_seq_lengths.txt"
-# Also need: male_geneInfo_added_annot.txt OR female_geneInfo_added_annot.txt 
+geneInfo.filename <- paste(sex, "_geneInfo_added_annot.txt", sep = "") # requires that sex is set
+
 
 #### 0. Import data ####
 # Import bed file (ref txome against genome)
@@ -57,7 +62,7 @@ for(i in 1:nrow(data)){
     
     # Find maximum value in "end" column for this specific shared.gene ID
     prev.end <- max(data[which(data$shared.gene==counter), "end"])
-    print(prev.end)
+    #print(prev.end)
     
   } else {
     # increase the counter to signify a new 'shared.gene'
@@ -74,8 +79,10 @@ for(i in 1:nrow(data)){
 
 
 # Write out results
+output.filename <- paste(sex, "_non-overlapping_transcripts.txt", sep="")
+
 write.table(x = data
-            , file = "sfontinalis_contigs_unwrap_v_ICSASG_v2_q30_sorted_w_redund_info.bed"
+            , file = output.filename
             , quote = F
             , sep = "\t"
             , row.names = F)
@@ -107,12 +114,6 @@ is.present <- rep("NA", times = length(data.lengths.sorted$transcript))
 data.lengths.sorted.choose <- cbind(data.lengths.sorted, is.present )
 
 #### 3. Import gene expression object ####
-# Choose sex of coexpression modules
-#sex <- "female"
-sex <- "male"
-
-# Create filename
-geneInfo.filename <- paste(sex, "_geneInfo_added_annot.txt", sep = "")
 
 # Import WGCNA object
 geneinfo <- read.delim2(file = geneInfo.filename, header = T)
