@@ -6,13 +6,8 @@
 setwd("~/Documents/10_bernatchez/10_paralogs")
 
 # Choose sex of coexpression modules
-#sex <- "female"
-sex <- "male"
-
-number.modules.by.sex <- c(0,28)
-names(number.modules.by.sex) <- c("female","male")
-
-number.modules.by.sex[sex]
+sex <- "female"
+#sex <- "male"
 
 # Import
 in.filename <- paste(sex, "_single_transcript_per_gene.txt", sep = "")
@@ -34,12 +29,7 @@ results[which(is.na(results$moduleColor)), "moduleColor"] <- "low.corr"
 
 # Define module names
 modules <- unique(results$moduleColor)
-
-
-
-
-
-
+modules
 
 #### 01b. Set up: determine main chromosomes #####
 # Count genes per genomic scaffold
@@ -105,7 +95,8 @@ par(mfrow=c(1,1), mar = c(0,4,2,0), cex = 0.6)
 # Set up variables if composite plotting
 plot.filename <- paste(sex, "_modules_by_chromosomes.pdf")
 pdf(file = plot.filename, width= 12, height = 10)
-sex.par <- list() ; sex.par[["female"]] <- NULL; sex.par[["male"]] <- c(7,4)
+# Importantly, set the parameters based on sex (number modules)
+sex.par <- list() ; sex.par[["female"]] <- c(4,4); sex.par[["male"]] <- c(7,4)
 par(mfrow=sex.par[[sex]], mar = c(0,4,2,0), cex = 0.6)
 
 
