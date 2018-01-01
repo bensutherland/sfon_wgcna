@@ -113,22 +113,33 @@ pie(x = slices, labels = lbls2, col = palette[1:length(lbls2)]
     , main = paste("Baseline with", sum(slices), "genes"))
 
 # Then plot separately per module
+# set nulls
+colors.subset <- NULL ; slices.plot <- NULL; lbls2.plot <- NULL; colors.subset.plot <- NULL
+
+
+
 for(i in 1:length(genes.per.chr.per.mod.list)){
   slices <- genes.per.chr.per.mod.list[[i]]
 
   # lbls <- chromosomes.of.interest
+  # Work with full data
   lbls <- gsub(pattern = "NC_0273|\\.1", replacement = "", x = chromosomes.of.interest, perl = T)
   pct <- round(slices/sum(slices)*100)
   lbls2 <- paste(lbls,"-", pct, "%", sep ="")
+  colors.subset <- palette[1:length(lbls2)]
+  # These are all matched, and include zero value slices. need: slices, lbls2, colors.subset
   
-  # Remove empties
-  slices <- slices[slices!=0] # don't plot any slices that are empty
-  lbls2 <- lbls2[grep(pattern = "-0%", x = lbls2, invert = T)] # don't plot any labels when empty
+  # Now remove slices and assoc. params (slice value, labels and colors)
+  slices.plot <- slices[slices!=0] # don't plot any slices that are empty
+  lbls2.plot <- lbls2[slices!=0]
+  colors.subset.plot <- colors.subset[slices!=0]
+  #lbls2 <- lbls2[grep(pattern = "-0%", x = lbls2, invert = T)] # don't plot any labels when empty
+  
   
   # Set up plot
   module.this.round <- names(genes.per.chr.per.mod.list)[i]
   
-  pie(x = slices, labels = lbls2, col = palette[1:length(lbls2)]
+  pie(x = slices.plot, labels = lbls2.plot, col = colors.subset.plot
       , main = paste(module.this.round, "with", sum(slices), "genes"))
 }
 
