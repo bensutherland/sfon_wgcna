@@ -98,7 +98,7 @@ par(mfrow=c(1,1), mar = c(0,4,2,0), cex = 0.6)
 plot.filename <- paste(sex, "_modules_by_chromosomes.pdf")
 pdf(file = plot.filename, width= 12, height = 10)
 # Importantly, set the parameters based on sex (number modules)
-sex.par <- list() ; sex.par[["female"]] <- c(4,4); sex.par[["male"]] <- c(7,4)
+sex.par <- list() ; sex.par[["female"]] <- c(4,5); sex.par[["male"]] <- c(7,4)
 par(mfrow=sex.par[[sex]], mar = c(0,4,2,0), cex = 0.6)
 
 
