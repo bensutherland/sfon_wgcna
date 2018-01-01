@@ -91,6 +91,7 @@ output
 # sort by ascending p-value
 output <- output[with(output, order(output$pval)), ]
 
+head(output)
 
 
 #### 04. Save values data
