@@ -68,11 +68,31 @@ This Rscript will require: a bed file (from above), a transcript lengths file, a
 This data is output as a table, such as `<sex>_single_transcript_per_gene.txt`.     
 Move to next step to plot modules' chromosomal composition.     
 
+
 ## 5. Compare representation by chromosome across modules ##
 Use Rscript to characterize the proportions of genes from each chromosome in the modules, and compare to the baseline of all genes, using the following script: `plot_mod_chr_comp.R`         
 Basically, this will determine which scaffolds are the chromosomes, what the baseline is in terms of number of genes from each chromosome, calculate this for each module, plot in pie charts and export to text the counts of genes from each chromosome in each module.    
 
 #todo: Apply Fisher's exact test and bonferonni correction.   
+
+
+## 6. Plot positions of genes in enriched chromosomes ##
+This uses as input the file created from `plot_mod_chr_comp.R`, `chr_of_interest_list.txt`, and the reference genome (unwrapped).         
+
+Determine chromosome lengths of 'chr of interest', first selecting only the chr of interest:   
+`for i in $(cat chr_of_interest_list.txt) ; do grep -A 1 $i ~/Documents/z-ssal_genome/GCF_000233375.1_ICSASG_v2_genomic_unwrapped.fna ; done > chr_of_interest_genome.fasta`    
+
+Then use the same command as above to calculate lengths of the accessions in this fasta file:    
+`cat chr_of_interest_genome.fasta | awk '$0 ~ ">" {print c; c=0;printf substr($0,2,100) "\t"; } $0 !~ ">" {c+=length($0);} END { print c; }' > chr_of_interest_genome_lengths.txt`    
+
+
+Use Rscript to do plotting `plot_genes_on_chr.R`    
+
+
+
+
+
+
 
 ## 4. Identify paralogs 
 A reciprocal best hit blast has been constructed to blast same-on-same but to remove the focal transcript from the blast so that the first transcript can be chosen as the 'best hit' without hitting itself. 
