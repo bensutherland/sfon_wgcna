@@ -44,6 +44,14 @@ head(background.numbers.sorted, n = 30)
 # Determine the main chromosomes of the genome
 chromosomes.of.interest <- background.numbers.sorted$target[1:29]
 
+# Write out chromosomes.of.interest file to use later
+write.table(x = chromosomes.of.interest, file = "chr_of_interest_list.txt" 
+            , quote = F, sep = "\t"
+            , row.names = F
+            , col.names = F
+            )
+write.csv(chromosomes.of.interest, file = "chr_of_interest_list.csv", col.names = F)
+
 #### 01c. Baseline: genes per chromosome of interest ####
 background.numbers.sorted[background.numbers.sorted$target %in% chromosomes.of.interest,]
 
