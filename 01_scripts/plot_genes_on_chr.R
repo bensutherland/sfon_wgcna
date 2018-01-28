@@ -67,7 +67,7 @@ max.ylim <- length(sig.chr.mods.and.length$chr) # based on the total unique chr 
 max.xlim <- max(sig.chr.mods.and.length$length) # based on the longest chr
 
 # Draw empty plot
-par(mfrow=c(1,1), mar = c(4,6,3,3), cex = 0.6)
+par(mfrow=c(1,1), mar = c(4,7,3,6), cex = 0.6)
 
 # Plot empty graph
 plot(1, type="n", xlab="Position (bp)", ylab="", xlim=c(1, max.xlim), ylim=c(0, max.ylim), yaxt = "n")
@@ -75,6 +75,10 @@ plot(1, type="n", xlab="Position (bp)", ylab="", xlim=c(1, max.xlim), ylim=c(0, 
 axis(2, at=1:max.ylim
      , labels=sig.chr.mods.and.length$chr
      #, labels=paste("chr_", seq(1:10))
+     , las = 1)
+
+axis(4, at=1:max.ylim
+     , labels=sig.chr.mods.and.length$mod
      , las = 1)
 
 ### Loops to plot ###
