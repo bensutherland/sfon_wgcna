@@ -1,34 +1,48 @@
 # **WGCNA Analysis for Brook Charr** #
-Note: this repository is for WGCNA analysis of data prepared using the following repo:
-https://github.com/bensutherland/SE-reads_assemble-to-counts.git
-At the end of the above repo, read counts will be output from HT-seq, and ready to be normalized and analyzed using WGCNA.
+WGCNA analysis of transcriptome data for Sutherland et al. 2018 (in prep).   
+This pipeline has only been tested and used for the purposes of the authors of the above article, and has no guarantees of usefulness whatsoever for other purposes.   
 
-Note that currently the input file has five lines at the end that begin with '__' that are not genes, they are summary information, including 'no_feature', 'ambiguous', 'too_low_aQual', 'not_aligned' and 'alignment_not_unique'. I am not sure what needs to be done with this, as other analysis appears to remove that information.
+*Required inputs to the repo include:*   
+1) a counts file with linear values that are output from the following repo:  
+https://github.com/bensutherland/SE-reads_assemble-to-counts.git    
+specifically using `01_script/03_express.sh` and then `01_scripts/utility_scripts/prepare_gxlevels_matrix.R`.   
+Essentially, this uses the 'effective counts' column as suggested by eXpress (#cite).
+This should be entitled/located as follows: `02_input_data/out.matrix.csv`
 
-Requirements:
+2) an interpretation file that contains the filenames for each sample and the associated phenotypic data. 
+This should be entitled/located as follows: `00_archive/sfeq_interpretation_v1.csv`   
+
+*Required libraries:*  
 `edgeR` https://bioconductor.org/packages/release/bioc/html/edgeR.html    
 `WGCNA` https://cran.r-project.org/web/packages/WGCNA/index.html    
+`locfit` https://cran.r-project.org/web/packages/locfit/index.html      
 
-TODO:    
-1. Determine best way to map data for use in WGCNA that can be the same for both species    
-2. Test mapping efficiency to either reference genome (substantial difference?)    
+## A. WGCNA Network Analysis ##  
+### 1. Filtering and normalization of linear, effective transcript counts ###
+Use the script `01_edgeR_normalization.R`. Inputs for this step are the two input files listed above (see *Required inputs to the repo include:* above).          
+
+In brief, this script does the following:    
+1) Imports data, sets up DGElist 
+2) Filters data for low expression (i.e. requires X reads mapping in at least Y samples)
+3) Normalizes data using TMM normalization
+4) Estimates dispersions of counts
+5) Produces normalized, log2 data as object `02_input_data/sfon_wgcna_01_output.RData` to be used in subsequent steps.
+6) Produces mds plot of all samples
 
 
-## 1. Filtering and normalization ##
-These steps are performed in edgeR.   
-See the script `01_edgeR_normalization.R`   
+### 2. Set up data for WGCNA analysis, including subsets of samples and prepared traits ###
+Use the script `02_WGCNA_setup.R`. Inputs for this step include the object `02_input_data/sfon_wgcna_01_output.RData` from the previous step. Much of this analysis comes from WGCNA package tutorials, although a lot is also custom or new code. Detailed instructions are found within the script.      
 
-In brief, transcripts are filtered for low expression (counts > x in y samples), normalized by TMM normalization and library size, and translated to cpm values using the normalized library size.
-Data is visualized using mds plot, dispersions estimated (coefficient of variation for experiment).
-Data is output in a matrix of filtered and normalized genes (but all are still in linear, not log2).
-Output datafile can be found in `03_normalized_data/normalized_output_matrix.csv`
+In brief, this script does the following:
+1) Imports the data and the interpretation file, makes modifications to the traits and adds information for the Arctic Charr samples.   
+2) Creates subsets of Brook Charr female offspring data, Brook Charr male offspring data, Arctic Charr male data, all sample backup
+3) Produces all of these subsets into `02_input_data/sfon_wgcna_setup.RData`   
 
-Note: original analysis separately generated male and female output and filtering. I don't think this is necessary, as in the next steps, the data can be subset by sex and re-filtered for low expression. The only place that may be negatively impacted is by using the TMM normalization on the sexes together, as we can expect there to be expression differences between these groups. For now will leave as is.
+From here, either proceed to step 3 below (for full WGCNA analysis) or step 3A below, which is specific to plotting all Brook Charr transcriptome data with all selected trait data without using subsets.    
 
-## 2. Build WGCNA modules ##
-These steps are performed in R using the WGCNA package. See detailed instructions within `01_scripts/02_WGCNA.R`     
+### 3. Build networks for female or male samples, and compare the opposite sex and Arctic Charr data to the network ###
+Use the script `03_WGCNA_analysis.R`. Inputs for this step include the object `02_input_data/sfon_wgcna_setup.Rdata` from the previous step.  
 
-## 3. Compare query expression data against reference modules ##
 These steps are performed in R using the WGCNA package. See detailed instructions within `01_scripts/03_WGCNA_BC_fem_mods_male_comp.R`     
 
 
