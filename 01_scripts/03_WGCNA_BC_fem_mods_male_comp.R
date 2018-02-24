@@ -3,14 +3,25 @@
 ## Clean space
 #rm(list=ls())
 
+require("WGCNA")
+
+# Logan & Xavier
+setwd("~/Documents/10_bernatchez/01_sfon_eqtl/sfon_wgcna/")
+enableWGCNAThreads(nThreads = 7) # Logan
+
+
 # Load setup wgcna from previous
 load(file = "02_input_data/sfon_wgcna_setup.RData")
 
 #### User: choose working subset ####
 ## Choose reference set to build modules
 # choose among "female", "male" and "AC" for comparisons
-REF <- "male"
-SEC <- "AC"
+REF <- "female"
+SEC <- "male"
+
+# REF <- "male"
+# SEC <- "female"
+
 
 dim(datExpr.list[[REF]])
 datExpr0 <- datExpr.list[[REF]]
@@ -21,14 +32,25 @@ dim(datExpr.list[[SEC]]) # this will be input into datExpr0 below during module 
 ## Define which genes have > req num expressing samples
 num.indiv <- 5
 
+# Observe structure of data
 dim(datExpr0)
+datExpr0[1:5,1:5] 
+
+# Create nulls
 expressed <- NULL
 keep.genes <- NULL
 expressed.tally <- NULL
+
+# loop over each gene (colnames)
 for(i in 1:length(colnames(datExpr0))) { 
+  
+  # Note, here (-1) is used as a proxy for cpm > 0.5
+  # How many samples have greater than 0.5 cpm, per gene:
   expressed <- length(which(datExpr0[,i] > -1))
   print(expressed)
   expressed.tally <- c(expressed.tally, expressed)
+  
+  # If the number of individuals for this gene is more than num.indiv above, put transcript in 'keep genes'
   if (expressed > num.indiv) {
     keep.genes <- c(keep.genes, colnames(datExpr0)[i])
   }
@@ -36,6 +58,11 @@ for(i in 1:length(colnames(datExpr0))) {
 
 head(keep.genes)
 length(keep.genes)
+
+# Give quantitative summaries of how many genes were expressed in how many samples
+length(rownames(datExpr0)) # number of samples
+0.90 * length(rownames(datExpr0)) # 90% of samples
+table(expressed.tally  >  (0.90 * length(rownames(datExpr0)))) # provides answer
 
 # Plot the freq of genes for each bin of number samples expressed?
 filename <- paste("04_results/", REF, "_transcript_expr_in_num_samp.pdf", sep = "")
@@ -105,17 +132,41 @@ colnames(traitData)
 str(traitData)
 
 # Choose phenotypes to retain
+
+### Removal Method ###
 # setup list
-traits.to.remove.fem <- c(3:5,7,8:10,14,26:27,30,41:45,46)
-traits.to.remove.male <- c(3:5,7,8:10,14,26:27,30,40:41,43,45,46)
-traits.list <- list(female = traits.to.remove.fem, male = traits.to.remove.male)
+# traits.to.remove.fem <- c(3:5,7,8:10,14,26:27,30,41:45,46)
+# traits.to.remove.male <- c(3:5,7,8:10,14,26:27,30,40:41,43,45,46)
+# traits.list <- list(female = traits.to.remove.fem, male = traits.to.remove.male)
 
 # subset list
-traits.to.remove <- traits.list[[REF]] 
-colnames(traitData[, -c(traits.to.remove)]) # confirm traits to keep
+# traits.to.remove <- traits.list[[REF]] 
+#colnames(traitData[, -c(traits.to.remove)]) # confirm traits to keep
 
 # Keep only the desired traits
-allTraits <- traitData[, -c(traits.to.remove)] # remove unneeded columns
+#allTraits <- traitData[, -c(traits.to.remove)] # remove unneeded columns
+
+
+### End Removal Method ###
+
+
+
+############ FLASH BACK TO HERE #####
+
+### Retain Method
+traits.to.keep.all <- c("file.name", "lib.ID" 
+                        , "sex", "matur"
+                        , "leng.cm_1109", "weight.g_1109", "sp.growth.rateT1.T3"
+                        , "condit.fact_T3", "weight_liver.g"
+                        , "cort.poststress"
+                        , "cort.delta", "osmo.poststress", "osmo.delta"
+                        , "chlor.poststress", "chlor.delta"
+                        , "fem.egg.diam", "male.sperm.conc", "male.sperm.diam"
+                        , "RIN")
+colnames(traitData[, traits.to.keep.all]) # confirm traits to keep
+
+# Keep only the desired traits
+allTraits <- traitData[, traits.to.keep.all] # remove unneeded columns
 
 # Dataframe w/ traits to match expr data
 libSamples = rownames(datExpr)
@@ -134,6 +185,66 @@ for(t in 1:length(datTraits)){
 }
 str(datTraits)
 
+##### DEPENDING ON THE SEX, REMOVE THE ALTERNATE SEX-SPECIFIC PHENO
+# setup list
+names(datTraits)
+traits.to.remove.fem <- c("male.sperm.conc", "male.sperm.diam")
+traits.to.remove.male <- c("fem.egg.diam")
+traits.list <- list(female = traits.to.remove.fem, male = traits.to.remove.male)
+
+# subset list
+traits.to.remove <- traits.list[[REF]] 
+# Remove the columns containing 'traits.to.remove', which is sex-specific
+colnames(datTraits[, -(which(colnames(datTraits)==traits.to.remove))])
+
+# Keep only the desired traits
+datTraits <- datTraits[, -(which(colnames(datTraits)==traits.to.remove))] # remove unneeded columns
+colnames(datTraits)
+
+## Rename Traits
+# Rename traits
+names(datTraits)
+names(datTraits) <- gsub(x = names(datTraits), pattern = "RIN", replacement = "RIN")
+names(datTraits) <- gsub(x = names(datTraits), pattern = "weight.g_1109", replacement = "weight")
+names(datTraits) <- gsub(x = names(datTraits), pattern = "sp.growth.rateT1.T3", replacement = "growth")
+names(datTraits) <- gsub(x = names(datTraits), pattern = "leng.cm_1109", replacement = "length")
+names(datTraits) <- gsub(x = names(datTraits), pattern = "sex", replacement = "sex")
+names(datTraits) <- gsub(x = names(datTraits), pattern = "matur", replacement = "maturity")
+names(datTraits) <- gsub(x = names(datTraits), pattern = "condit.fact_T3", replacement = "condition")
+names(datTraits) <- gsub(x = names(datTraits), pattern = "weight_liver.g", replacement = "liver weight")
+names(datTraits) <- gsub(x = names(datTraits), pattern = "cort.poststress", replacement = "cortisol")
+names(datTraits) <- gsub(x = names(datTraits), pattern = "cort.delta", replacement = "cortisol change")
+names(datTraits) <- gsub(x = names(datTraits), pattern = "osmo.poststress", replacement = "osmolality")
+names(datTraits) <- gsub(x = names(datTraits), pattern = "osmo.delta", replacement = "osmolality change")
+names(datTraits) <- gsub(x = names(datTraits), pattern = "chlor.poststress", replacement = "chloride")
+names(datTraits) <- gsub(x = names(datTraits), pattern = "chlor.delta", replacement = "chloride change")
+names(datTraits) <- gsub(x = names(datTraits), pattern = "fem.egg.diam", replacement = "egg diam.")
+names(datTraits) <- gsub(x = names(datTraits), pattern = "male.sperm.conc", replacement = "sperm conc.")
+names(datTraits) <- gsub(x = names(datTraits), pattern = "male.sperm.diam", replacement = "sperm diam.")
+names(datTraits)
+
+
+###### RENAME SAMPLES #####
+# Rename samples
+sample.name.split.list <- strsplit(x = rownames(datExpr), split = "lib", fixed = T )
+sample.name.split.mat <- matrix(unlist(sample.name.split.list), ncol=2, byrow=T)
+sample.name.rebuild <- gsub(pattern = "_R1", replacement = "", sample.name.split.mat[,2])
+# sample.names <- paste("lib", sample.name.rebuild, sep = "")
+sample.names <- sample.name.rebuild
+
+# Confirm that they still match
+rownames(datExpr)[1:10]
+sample.names[1:10]
+
+tail(rownames(datExpr))
+tail(sample.names)
+
+# and rename the datExpr object
+rownames(datExpr) <- sample.names
+
+###### END #####
+
+
 
 #### 4.b. Re-cluster after rem outliers ####
 sampleTree2 = hclust(dist(datExpr), method = "average")
@@ -145,10 +256,10 @@ pdf(file = filename, width = 9, height = 7)
 
 plotDendroAndColors(sampleTree2, traitColors,
                     groupLabels = names(datTraits),
-                    cex.dendroLabels = 0.7,
+                    cex.dendroLabels = 0.9,
                     main = "",
                     #cex.rowText = 0.3,
-                    cex.colorLabels = 0.7,
+                    cex.colorLabels = 0.9,
                     #rowTextAlignment = "left",
                     marAll = c(3,6,1,1)
                     #, abHeight = 180,
@@ -366,7 +477,7 @@ dim(textMatrix) <- dim(moduleTraitCor) #give dimensions of textMatrix
 filename <- paste("04_results/", REF, "_module-trait_rel.pdf", sep = "")
 pdf(file = filename, width = 10, height = 9)
 
-par(mar = c(7, 10, 3, 3))
+par(mfrow = c(1,1), mar = c(7, 10, 3, 3))
 labeledHeatmap(Matrix = moduleTraitCor,
                xLabels = names(datTraits),
                yLabels = names(mergedMEs),
