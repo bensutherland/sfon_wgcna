@@ -9,14 +9,15 @@ setwd("~/Documents/10_bernatchez/10_paralogs")
 sex <- "female"
 #sex <- "male"
 
-# Import
+# Import datafile of redundancy removed transcripts (sex-specific)
 in.filename <- paste(sex, "_single_transcript_per_gene.txt", sep = "")
 results <- read.delim2(file = in.filename, header = T, sep = "\t")
 head(results)
 
-# remove row NA
+# Remove the NA row
 results <- results[-c(which(is.na(results$transcript))),]
 
+# Convert moduleColor to character
 results$moduleColor <- as.character(results$moduleColor)
 
 #### 01a. Set up: module names ####
@@ -53,8 +54,11 @@ write.table(x = chromosomes.of.interest, file = "chr_of_interest_list.txt"
 write.csv(chromosomes.of.interest, file = "chr_of_interest_list.csv", col.names = F)
 
 #### 01c. Baseline: genes per chromosome of interest ####
+# show the genes from all modules, low correlated and grey included, that were included in this sex-specific set of transcripts
 background.numbers.sorted[background.numbers.sorted$target %in% chromosomes.of.interest,]
 
+baseline.info <- background.numbers.sorted[background.numbers.sorted$target %in% chromosomes.of.interest,]
+sum(baseline.info[,2]) # provide the total number of transcript locations in the chromosomes of interest
 
 #### 02. Count genes per chr for each module #### 
 
