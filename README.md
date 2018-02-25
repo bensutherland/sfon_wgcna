@@ -43,7 +43,20 @@ From here, either proceed to step 3 below (for full WGCNA analysis) or step 3A b
 ### 3. Build networks for female or male samples, and compare the opposite sex and Arctic Charr data to the network ###
 Use the script `03_WGCNA_analysis.R`. Inputs for this step include the object `02_input_data/sfon_wgcna_setup.Rdata` from the previous step.  
 
-These steps are performed in R using the WGCNA package. See detailed instructions within `01_scripts/03_WGCNA_BC_fem_mods_male_comp.R`     
+To begin, one must choose what is the reference set to use to build the network, and the second set to compare to the reference network. Choose among "female", "male" and "AC" for female Brook Charr, male Brook Charr and Arctic Charr, respectively. Any combination of "female" or "male" as the network generation with any other as the module preservation test can be conducted. Here networks are not generated using Arctic Charr data.        
+
+In brief, this script does the following: 
+1) Filters based on low expression using only the samples within the reference set. (currently uses cpm >= 0.5, which is 14 transcripts mapping in the average library size (i.e. 27 M reads))    
+2) Incorporates trait data, selects only the trait data required
+3) Renames trait data and samples
+4) Clusters samples based on expression and removes outlier samples
+5) Calculates adjacency on all expressed transcripts, selects most connected 25 k transcripts, builds topological overlap matrix, generates module eigengenes, clusters module eigengenes and merges similar modules
+6) Correlates module eigengenes with traits
+7) Calculates module membership and gene significance for genes and traits of interest
+8) Adds additional annotation information for all transcripts, save out (i.e. geneInfo)
+9) Bring in second dataset, filter second dataset to be compared to network for low expression in the second dataset samples, keep only the genes that are present in the network
+10) Test for module preservation of the network in the second dataset, and visualize results
+
 
 
 ## 4. Identify one isoform per gene in reference transcriptome using a reference genome ##
