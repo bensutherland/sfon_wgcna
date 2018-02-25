@@ -103,9 +103,9 @@ This approach was taken from http://www.danielecook.com/generate-fasta-sequence-
 ##### vi. Identify a single transcript per contiguously mapping segment on reference genome #####  
 Use the script `01_scripts/id_genes_from_ref_txome_w_ref_genome.R` to identify a single transcript per continuous mapping transcript segment.    
 This script will require the following:    
-1. bed file of alignments (from step iv. above)
-2. transcript lengths file (from step v. above)
-3. sex-specific geneInfo file with added annotations, entitled <sex>_geneInfo_added_annot.txt (from A.3. above)  
+* bed file of alignments (from step iv. above)
+* transcript lengths file (from step v. above)
+* sex-specific geneInfo file with added annotations, entitled <sex>_geneInfo_added_annot.txt (from A.3. above)  
 
 In brief, this will:     
 1. Link transcripts into contiguous overlapping segments, each of which will be considered one 'gene'. This produces <sex>_non-overlapping_transcripts.txt.       
