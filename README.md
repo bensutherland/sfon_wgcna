@@ -138,6 +138,7 @@ This will result in the following file: `<sex>_fisher_test_chr_enrich.txt`
 More reading:    
 http://www.biostathandbook.com/fishers.html    
 http://www.dummies.com/education/math/statistics/how-to-compare-two-population-proportions/       
+https://onlinecourses.science.psu.edu/stat414/node/268     
 
 
 ### 3. Plot positions of genes in enriched chromosomes ###
