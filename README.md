@@ -58,70 +58,118 @@ In brief, this script does the following:
 10) Test for module preservation of the network in the second dataset, and visualize results
 
 
+## B. Module and chromosome analysis ##  
+### 1. Identify a single transcript per gene in the *de novo* reference transcriptome using a related species reference genome ###
+In general terms, this maps a reference transcriptome against a reference genome and selects a single transcript for each contiguously overlapping alignment in the reference genome. Note: this has only been tested on the current dataset and has no guarantees for broader usage.   
 
-## 4. Identify one isoform per gene in reference transcriptome using a reference genome ##
-This section will allow you to, given a reference transcriptome and genome input, identify which transcripts map and overlap in position on the reference genome. Then it allows you to retain only one transcript per contiguous map mapping transcript unit. (no guarantees, experimental)          
+*Required inputs to this section include:*
+* reference genome (fasta)
+* reference transcriptome (fasta) 
 
-Required: reference genome, reference transcriptome   
+*Required software*
+`gmap`    
+`samtools`    
+`bedtools`    
 
-First, index reference genome gmap, e.g. with S. salar:       
-`gmap_build -d ICSASG_v2 -D /home/ben/Documents/z-ssal_genome/ GCF_000233375.1_ICSASG_v2_genomic.fna`
+Use the following steps:   
+##### i. Index reference genome with gmap #####      
+For example, here with the Atlantic salmon genome (#cite)    
+```
+gmap_build -d ICSASG_v2 -D /home/ben/Documents/z-ssal_genome/ GCF_000233375.1_ICSASG_v2_genomic.fna
+```
 
-Second, align transcripts to reference genome:
-`gmap -D /home/ben/Documents/z-ssal_genome/ICSASG_v2 -d ICSASG_v2 -f samse -n 0 -t 4 ./sfontinalis_contigs_unwrap.fasta > ./sfontinalis_contigs_unwrap_v_ICSASG_v2.sam 2> ./sfontinalis_contigs_unwrap_v_ICSASG_v2.sam.log`
+##### ii. Align transcripts against genome with gmap #####  
+For example, here with the Phylofish Brook Charr reference transcriptome (#cite)   
+```
+gmap -D /home/ben/Documents/z-ssal_genome/ICSASG_v2 -d ICSASG_v2 -f samse -n 0 -t 4 ./sfontinalis_contigs_unwrap.fasta > ./sfontinalis_contigs_unwrap_v_ICSASG_v2.sam 2> ./sfontinalis_contigs_unwrap_v_ICSASG_v2.sam.log
+```
 
-Third, filter mappings by mapq and convert to bam:    
+##### iii. Filter mappings by quality and convert to bam #####   
 ```
 samtools view -bS -q 30 ./sfontinalis_contigs_unwrap_v_ICSASG_v2.sam > ./sfontinalis_contigs_unwrap_v_ICSASG_v2_q30.bam     
 samtools sort sfontinalis_contigs_unwrap_v_ICSASG_v2_q30.bam -o sfontinalis_contigs_unwrap_v_ICSASG_v2_q30_sorted.bam
 samtools index sfontinalis_contigs_unwrap_v_ICSASG_v2_q30_sorted.bam`
 ```
 
-Fourth, create a bed file     
+##### iv. Convert bam alignments to bed file #####       
 `bedtools bamtobed [OPTIONS] -i your_file.bam`
 
-Fifth, find sequence lengths of all transcripts:    
-`cat sfontinalis_contigs_unwrap.fasta | awk '$0 ~ ">" {print c; c=0;printf substr($0,2,100) "\t"; } $0 !~ ">" {c+=length($0);} END { print c; }' >  sfontinalis_contigs_unwrap_seq_lengths.txt`
-This was from: http://www.danielecook.com/generate-fasta-sequence-lengths/
+##### v. Determine sequence lengths for all transcripts #####      
+```
+cat sfontinalis_contigs_unwrap.fasta | awk '$0 ~ ">" {print c; c=0;printf substr($0,2,100) "\t"; } $0 !~ ">" {c+=length($0);} END { print c; }' >  sfontinalis_contigs_unwrap_seq_lengths.txt
+```
+This approach was taken from http://www.danielecook.com/generate-fasta-sequence-lengths/      
 
-Sixth, use R script to identify a single transcript per continuous mapping transcript segment: `id_genes_from_ref_txome_w_ref_genome.R`.    
-This Rscript will require: a bed file (from above), a transcript lengths file, a <sex>_geneInfo_added_annot.txt file.         
- The steps required are as follows:      
-1. Link transcripts into contiguous overlapping segments, each of which will be considered one 'gene'    
-2. Associate transcript lengths to the 'unique gene' identifier.  
-3. Import a sex-specific geneInfo object (see above) that contains information about the clusters to which each gene belongs.     
-4. Select a single transcript to retain per 'unique gene' identifier in order of a) is expressed and; b) take longest. Possible to export list of single transcripts with their clusters here.   
+##### vi. Identify a single transcript per contiguously mapping segment on reference genome #####  
+Use the script `01_scripts/id_genes_from_ref_txome_w_ref_genome.R` to identify a single transcript per continuous mapping transcript segment.    
+This script will require the following:    
+1. bed file of alignments (from step iv. above)
+2. transcript lengths file (from step v. above)
+3. sex-specific geneInfo file with added annotations, entitled <sex>_geneInfo_added_annot.txt (from A.3. above)  
 
-This data is output as a table, such as `<sex>_single_transcript_per_gene.txt`.     
-Move to next step to plot modules' chromosomal composition.     
+In brief, this will:     
+1. Link transcripts into contiguous overlapping segments, each of which will be considered one 'gene'. This produces <sex>_non-overlapping_transcripts.txt.       
+2. Merge transcript length file with the non-overlapping transcripts file   
+3. Merge above with the sex-specific geneInfo file with information about clusters to which each transcript belongs     
+4. Select a single transcript to retain per 'unique gene' identifier from the non-overlapping transcripts. This ranks selection based on a) whether the transcript is expressed in the sex; b) the longest transcript. 
+
+This outputs `<sex>_single_transcript_per_gene.txt`, which is the input for the next step.             
+
+### 2. For each module, determine proportion of transcripts from each chromosome ###
+In general terms, this characterizes the proportions of transcripts within each module that comes from each chromosome in the reference genome to see if there is any overrepresentation of specific chromosomes within specific modules.    
+Use the script `plot_mod_chr_comp.R`, followed by `fishers_exact_test.R`      
+
+*Required inputs to this section include:*
+* sex-specific single transcript per contiguous alignment, from above '<sex>_single_transcript_per_gene.txt'. This file contains all details needed for this section. 
+         
+In brief, `plot_mod_chr_comp.R` will:
+1. Identify which scaffolds are the main chromosomes for the genome (currently specific to Atlantic Salmon), generates the file 'chr_of_interest_list.txt'    
+2. Determine how many genes are in each chromosome in all expressed genes (i.e. baseline = all modules, including grey and those not in the 25 k most connected genes (named as 'low.corr' here)    
+3. Determine how many genes are in each chromosome in each module. Plot these in pie charts. 
+This will result in the following file:  `<sex>_count_of_genes_per_chr_per_module.txt`. Use this file as an input to the next script below. 
+
+In brief, `fishers_exact_test.R` will:
+1. For each module, compare the proportion of genes in a chromosome to the proportion of baseline genes in this chromosome
+#todo add more detail to this, and comment the code. 
+This will result in the following file: `<sex>_fisher_test_chr_enrich.txt`   
+
+More reading:    
+http://www.biostathandbook.com/fishers.html    
+http://www.dummies.com/education/math/statistics/how-to-compare-two-population-proportions/       
 
 
-## 5. Compare representation by chromosome across modules ##
-Use Rscript to characterize the proportions of genes from each chromosome in the modules, and compare to the baseline of all genes, using the following script: `plot_mod_chr_comp.R`         
-Basically, this will determine which scaffolds are the chromosomes, what the baseline is in terms of number of genes from each chromosome, calculate this for each module, plot in pie charts and export to text the counts of genes from each chromosome in each module.    
-
-#todo: Apply Fisher's exact test and bonferonni correction.   
-
-
-## 6. Plot positions of genes in enriched chromosomes ##
-This uses as input the file created from `plot_mod_chr_comp.R`, `chr_of_interest_list.txt`, and the reference genome (unwrapped).         
-
-Determine chromosome lengths of 'chr of interest', first selecting only the chr of interest:   
-`for i in $(cat chr_of_interest_list.txt) ; do grep -A 1 $i ~/Documents/z-ssal_genome/GCF_000233375.1_ICSASG_v2_genomic_unwrapped.fna ; done > chr_of_interest_genome.fasta`    
-
-Then use the same command as above to calculate lengths of the accessions in this fasta file:    
-`cat chr_of_interest_genome.fasta | awk '$0 ~ ">" {print c; c=0;printf substr($0,2,100) "\t"; } $0 !~ ">" {c+=length($0);} END { print c; }' > chr_of_interest_genome_lengths.txt`    
+### 3. Plot positions of genes in enriched chromosomes ###
+In general terms, this plots the positions of genes in the enriched module-chromosome combinations.   
+*Required inputs to this section include:*
+* output from B.2. above, <sex>_count_of_genes_per_chr_per_module.txt
+* also from B.2. above, the list of the 29 chromosomes of Atlantic salmon: chr_of_interest_list.txt   
+* the unwrapped reference genome used to align transcripts against above (see ## todo: link ## for unwrapping fasta)
 
 
-Use Rscript to do plotting `plot_genes_on_chr.R`    
+Use the following steps:   
+##### i. Determine full chromosome lengths for all chromosomes #####
+Using the chr_of_interest_list.txt, determine chromosome lengths 
+```
+# select only chr of interest from unwrapped fasta:      
+for i in $(cat chr_of_interest_list.txt) ; do grep -A 1 $i ~/Documents/z-ssal_genome/GCF_000233375.1_ICSASG_v2_genomic_unwrapped.fna ; done > chr_of_interest_genome.fasta     
+# calculate chromosome lengths as done above for transcripts:   
+cat chr_of_interest_genome.fasta | awk '$0 ~ ">" {print c; c=0;printf substr($0,2,100) "\t"; } $0 !~ ">" {c+=length($0);} END { print c; }' > chr_of_interest_genome_lengths.txt        
+```
+This produces the file `chr_of_interest_genome_lengths.txt`
+
+##### ii. Plot genes on chromosomes #####
+Use the R script `plot_genes_on_chr.R` to generate plots.
+
+This step requires:   
+* Chromosome length file from above 'chr_of_interest_genome_lengths.txt' 
+* Sex-specific transcriptome to genome alignment file '<sex>_single_transcript_per_gene.txt'
+* Output of Fisher exact tests above '<sex>_fisher_test_chr_enrich.txt'
+
+In brief, this plots the position of genes from the module of interest along the length of the chromosome of interest. This step chooses module-chromosome combinations based on the significant results from above.   
 
 
 
-
-
-
-
-## 4. Identify paralogs 
+#### Paralog Identification Below is Experimental Only and Not Implemented in the Manuscript ####
 A reciprocal best hit blast has been constructed to blast same-on-same but to remove the focal transcript from the blast so that the first transcript can be chosen as the 'best hit' without hitting itself. 
 
 This functions by using BLAST of focal transcript against all reference transcriptome except itself, taking the single top hit and writing onto 'blast_output.txt'     
