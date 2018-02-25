@@ -58,6 +58,8 @@ In brief, this script does the following:
 10) Test for module preservation of the network in the second dataset, and visualize results
 
 
+
+
 ## B. Module and chromosome analysis ##  
 ### 1. Identify a single transcript per gene in the *de novo* reference transcriptome using a related species reference genome ###
 In general terms, this maps a reference transcriptome against a reference genome and selects a single transcript for each contiguously overlapping alignment in the reference genome. Note: this has only been tested on the current dataset and has no guarantees for broader usage.   
@@ -169,7 +171,9 @@ In brief, this plots the position of genes from the module of interest along the
 
 
 
-#### Paralog Identification Below is Experimental Only and Not Implemented in the Manuscript ####
+
+
+#### Not Completed: Paralog Identification Below is Experimental Only and Not Implemented in the Manuscript ####
 A reciprocal best hit blast has been constructed to blast same-on-same but to remove the focal transcript from the blast so that the first transcript can be chosen as the 'best hit' without hitting itself. 
 
 This functions by using BLAST of focal transcript against all reference transcriptome except itself, taking the single top hit and writing onto 'blast_output.txt'     
