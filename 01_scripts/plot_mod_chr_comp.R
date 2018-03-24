@@ -6,8 +6,13 @@
 setwd("~/Documents/10_bernatchez/10_paralogs")
 
 # Choose sex of coexpression modules
-sex <- "female"
-#sex <- "male"
+#sex <- "female"
+sex <- "male"
+
+# Choose whether all modules or significant (sig) are to be plotted
+select.type <- "all"
+#select.type <- "sig"
+
 
 # Import datafile of redundancy removed transcripts (sex-specific)
 in.filename <- paste(sex, "_single_transcript_per_gene.txt", sep = "")
@@ -46,7 +51,7 @@ head(background.numbers.sorted, n = 30)
 chromosomes.of.interest <- background.numbers.sorted$target[1:29]
 
 # Write out chromosomes.of.interest file to use later
-write.table(x = chromosomes.of.interest, file = "chr_of_interest_list.txt" 
+write.table(x = chromosomes.of.interest, file = "chr_of_interest_list.txt"
             , quote = F, sep = "\t"
             , row.names = F
             , col.names = F
@@ -90,6 +95,9 @@ info.set.all # gives info on which modules contain how many transcripts
 sum(as.numeric(info.set.all[c(-1,-3),2])) # to count up
 
 
+# Set output variable
+expt <- paste(sex, select.type, sep = "_")
+
 
 #### 03. Plot proportions of chr per mod ####
 # Set up plotting
@@ -107,11 +115,26 @@ palette <- c(cols1,cols2,cols3,cols4)
 # par(mfrow=c(1,1), mar = c(0,4,2,0), cex = 0.6)
 
 # Set up variables if composite plotting
-plot.filename <- paste(sex, "_modules_by_chromosomes.pdf")
-pdf(file = plot.filename, width= 12, height = 10)
+plot.filename <- paste(expt, "_modules_by_chromosomes.pdf")
+
+# Set up size of output based on whether all or sig is to be shown
+width.pdf <- list()
+width.pdf[["female_all"]] <- 12 ; width.pdf[["male_all"]] <- 12
+width.pdf[["female_sig"]] <- 10 ; width.pdf[["male_sig"]] <- 8
+
+height.pdf <- list()
+height.pdf[["female_all"]] <- 10 ; height.pdf[["male_all"]] <- 10
+height.pdf[["female_sig"]] <- 3 ; height.pdf[["male_sig"]] <- 5
+
+
+pdf(file = plot.filename, width= width.pdf[[expt]], height = height.pdf[[expt]])
+
 # Importantly, set the parameters based on sex (number modules)
-sex.par <- list() ; sex.par[["female"]] <- c(4,5); sex.par[["male"]] <- c(7,4)
-par(mfrow=sex.par[[sex]], mar = c(0,4,2,2), cex = 0.6)
+
+sex.par <- list()
+sex.par[["female_all"]] <- c(4,5); sex.par[["male_all"]] <- c(7,4)
+sex.par[["female_sig"]] <- c(1,3); sex.par[["male_sig"]] <- c(3,4)
+par(mfrow=sex.par[[expt]], mar = c(0,4,2,2), cex = 0.6)
 
 
 # Make a baseline pie chart (not sep by module)
@@ -132,6 +155,46 @@ pie(x = slices, labels = lbls2, col = palette[1:length(lbls2)]
 colors.subset <- NULL ; slices.plot <- NULL; lbls2.plot <- NULL; colors.subset.plot <- NULL
 
 
+#### Get info on significant enrichment (new) ####
+# Input transcripts/chr of interest file
+in.filename <- paste(sex, "_fisher_test_chr_enrich.txt", sep = "")
+chr.mods <- read.delim(file = in.filename, sep = "\t", header = T)
+head(chr.mods)
+
+# Only keep those that are significant
+sig.chr.mods <- subset(chr.mods, pval < 0.01)
+mods.to.plot <- as.character(unique(sig.chr.mods$mod))
+# don't include low.corr or grey as these are not true modules
+mods.to.plot <- mods.to.plot[mods.to.plot != "low.corr"]
+mods.to.plot <- mods.to.plot[mods.to.plot != "grey"]
+
+str(mods.to.plot)
+
+# Build a loop that extracts the necessary elements from the larger list 'genes.per.chr.per.mod.list'
+keep.info.list <- list()
+mod <- c()
+for(m in 1:length(mods.to.plot)){
+  mod <- mods.to.plot[m]
+  print(mod)
+  keep.info.list[[mod]] <- genes.per.chr.per.mod.list[[mod]]
+}
+
+keep.info.list
+
+### use an if statement to determine whether ALL or SELECT modules are to be plotted
+if(select.type == "sig"){
+  genes.per.chr.per.mod.list <- keep.info.list
+
+} else{
+  # don't change the main list
+  print("Not changing the main list")
+}
+
+
+
+##### end new section ####
+
+##### Plot #####
 
 for(i in 1:length(genes.per.chr.per.mod.list)){
   slices <- genes.per.chr.per.mod.list[[i]]
@@ -190,8 +253,8 @@ all.output
 
 
 #### 04. Save values data
-# Write out results
-filename.output <- paste(sex, c("count_of_genes_per_chr_per_module.txt"), sep = "_")
+#Write out results
+filename.output <- paste(expt, c("count_of_genes_per_chr_per_module.txt"), sep = "_")
 write.table(x = all.output
             , file = filename.output
             , quote = F
