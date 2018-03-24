@@ -118,6 +118,9 @@ par(mfrow=sex.par[[sex]], mar = c(0,4,2,0), cex = 0.6)
 slices <- c(background.numbers.sorted$num.genes[1:29])
 lbls <- background.numbers.sorted$target[1:29]
 lbls <- gsub(pattern = "NC_0273|\\.1", replacement = "", x = lbls, perl = T) # shorten name
+# fix numbering issue (add 1 to each chromosome due to the difference in chr ID and accession ID)
+lbls <- as.numeric(lbls) + 1
+
 pct <- round(slices/sum(slices)*100)
 lbls2 <- paste(lbls,"-", pct, "%", sep="")
 
@@ -136,7 +139,13 @@ for(i in 1:length(genes.per.chr.per.mod.list)){
   # lbls <- chromosomes.of.interest
   # Work with full data
   lbls <- gsub(pattern = "NC_0273|\\.1", replacement = "", x = chromosomes.of.interest, perl = T)
+  
+  # fix numbering issue (add 1 to each chromosome due to the difference in chr ID and accession ID)
+  lbls <- as.numeric(lbls) + 1
+  
+  
   pct <- round(slices/sum(slices)*100)
+  
   lbls2 <- paste(lbls,"-", pct, "%", sep ="")
   colors.subset <- palette[1:length(lbls2)]
   # These are all matched, and include zero value slices. need: slices, lbls2, colors.subset
