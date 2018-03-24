@@ -11,7 +11,7 @@
 setwd("~/Documents/10_bernatchez/10_paralogs")
 
 # Choose sex of coexpression modules
-#sex <- "female"
+sex <- "female"
 #sex <- "male"
 
 ##### 1. Input files ####
@@ -72,8 +72,13 @@ par(mfrow=c(1,1), mar = c(4,7,3,6), cex = 0.6)
 # Plot empty graph
 plot(1, type="n", xlab="Position (bp)", ylab="", xlim=c(1, max.xlim), ylim=c(0, max.ylim), yaxt = "n")
 
+# Use the chromosome names instead of the fasta accessions
+lbls0 <- gsub(pattern = "NC_0273|\\.1", replacement = "", x =  sig.chr.mods.and.length$chr, perl = T)
+lbls <- as.numeric(lbls0) + 1
+lbls
+
 axis(2, at=1:max.ylim
-     , labels=sig.chr.mods.and.length$chr
+     , labels=paste("chr_", lbls, sep = "")
      #, labels=paste("chr_", seq(1:10))
      , las = 1)
 
@@ -81,7 +86,7 @@ axis(4, at=1:max.ylim
      , labels=sig.chr.mods.and.length$mod
      , las = 1)
 
-### Loops to plot ###
+### Loops to plot positions of genes in the chromosome
 sig.chr.mods.and.length # this is our data to use
 
 # Pairs we want to plot
@@ -91,7 +96,7 @@ plot.data
 pairs.of.interest <- strsplit(plot.data, "-") # split it back up into constituents in a list
 pairs.of.interest 
 
-# Loop to plot each
+# Loop to plot positions of genes within the chromosome
 chr.of.interest <- NULL; mod.of.interest <- NULL
 sorted.sig <- NULL
 chr.pos <- NULL; chr.max <- NULL
