@@ -58,6 +58,12 @@ In brief, this script does the following:
 10) Test for module preservation of the network in the second dataset, and visualize results
 
 
+#### Plot heatmaps of module genes
+Use the script `01_scripts/plot_module_genes_in_heatmap.R` to plot heatmaps including genes from only one (or two) modules ordered by similarity in expression.  
+Required inputs include:    
+`04_results/<sex>_geneInfo_25k.csv` (which genes belong to which cluster in each sex)     
+`03_normalized_data/normalized_output_matrix_log2.csv` (norm expr vals for all samples and genes)    
+`00_archive/sfeq_interpretation_v1.csv` (sample metadata info)    
 
 
 ## B. Module and chromosome analysis ##  
@@ -173,25 +179,4 @@ In brief, this plots the position of genes from the module of interest along the
 
 
 
-
-#### Not Completed: Paralog Identification Below is Experimental Only and Not Implemented in the Manuscript ####
-A reciprocal best hit blast has been constructed to blast same-on-same but to remove the focal transcript from the blast so that the first transcript can be chosen as the 'best hit' without hitting itself. 
-
-This functions by using BLAST of focal transcript against all reference transcriptome except itself, taking the single top hit and writing onto 'blast_output.txt'     
-
-Use the following script to perform within transcriptome RBH blast (removing focal transcript and use BLAST against itself:    
-`repeated_blast.sh`    
-
-First make a blast database with the unwrapped reference transcriptome:   
-`makeblastdb -in ./GCF_000233375.1_ICSASG_v2_genomic.fna -dbtype nucl -parse_seqid`   
-
-Input: unwrapped ref transcriptome fasta, file with 'all_accn_names.txt'       
-Produces 'blast_output.txt'   
-
-Next need to use 'runall.sh' steps but re-code that does not assume the first best hit would be to itself, as these have been removed.    
-
-This will probably require automation bash script to perform the necessary steps.    
-Once this is constructed, the paralog pairs identified can be associated with the object from 3.4 export above.    
-
-As a final step, a script must be written to identify whether paralogs are in the same or different cluster, then plotted number same vs number different and tested statistically if necessary.     
 
