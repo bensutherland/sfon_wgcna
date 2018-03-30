@@ -35,6 +35,7 @@ str(mod.info)
 Log_cpm_data <- read.csv(file = "03_normalized_data/normalized_output_matrix_log2.csv", header=T, dec="."
                          , row.names = 1)
 Log_cpm_data[1:3, 1:10] # view data
+dim(Log_cpm_data)
 
 ## Import sample metadata
 Sampledata <- read.csv(file="00_archive/sfeq_interpretation_v1.csv", header=T)
@@ -51,40 +52,64 @@ colnames(Log_cpm_data) <- gsub(pattern = "_R1", replacement = ""
 
 head(colnames(Log_cpm_data))
 
-### Edit counts data to use short library IDs
-Log_cpm_data_sort <- Log_cpm_data
-str(Log_cpm_data)
-names(Log_cpm_data_sort)[1:104] <- unlist(strsplit(names(Log_cpm_data_sort)[1:104], "_"), use.names = FALSE)[c(FALSE, TRUE, FALSE)]
-names(Log_cpm_data_sort)[1:104]<-unlist(strsplit(names(Log_cpm_data_sort)[1:104], ".", fixed=TRUE), use.names = FALSE)[c(FALSE, TRUE)]
-str(Log_cpm_data_sort)
+#REMOVE#
+# ### Edit counts data to use short library IDs
+# Log_cpm_data_sort <- Log_cpm_data
+# str(Log_cpm_data)
+# names(Log_cpm_data_sort)[1:104] <- unlist(strsplit(names(Log_cpm_data_sort)[1:104], "_"), use.names = FALSE)[c(FALSE, TRUE, FALSE)]
+# names(Log_cpm_data_sort)[1:104]<-unlist(strsplit(names(Log_cpm_data_sort)[1:104], ".", fixed=TRUE), use.names = FALSE)[c(FALSE, TRUE)]
+# str(Log_cpm_data_sort)
+#REMOVE#
 
-### Combine library ID and sex info
-Sex_info<-data.frame(Lib_id=Sampledata$lib.ID, sex= Sampledata$sex)
-Lib_IDs_reads<-merge(Lib_IDs_reads, Sex_info, by.x="Lib_ID", by.y="Lib_id", sort=F)
-## Add Arctic char males (M2)
-Lib_IDs_reads<-rbind(Lib_IDs_reads, data.frame(Lib_ID = names(Log_cpm_data)[105:113], sex = rep("M2", 9)))
+
+# Combine sample name with info
+Sex_info <- data.frame(Lib_id=Sampledata$lib.ID, sex= Sampledata$sex)
+
+#Lib_IDs_reads<-merge(Lib_IDs_reads, Sex_info, by.x="Lib_ID", by.y="Lib_id", sort=F) # I think this just puts it in the same order
+
+## Add Arctic Charr males (M2)
+AC_info <- data.frame(Lib_id = names(Log_cpm_data)[105:113], sex = rep("M2", 9)) # Here M2 is to define a diff colour
+Sex_info_all <- rbind(Sex_info, AC_info)
+# Lib_IDs_reads<-rbind(Lib_IDs_reads, data.frame(Lib_ID = names(Log_cpm_data)[105:113], sex = rep("M2", 9)))
+head(Sex_info_all) ; tail(Sex_info_all)
 
 ## Order the file by sex
-Lib_IDs_ordered<-orderBy(~sex, data=Lib_IDs_reads)
+Lib_IDs_ordered <- orderBy(~sex, data=Sex_info_all)
+# Lib_IDs_ordered <- orderBy(~sex, data=Lib_IDs_reads)
+head(Lib_IDs_ordered)
 
-## Order counts data based on sex
-setDT(Log_cpm_data_sort)
-setcolorder(Log_cpm_data_sort, as.character(Lib_IDs_ordered$Lib_ID))
-Log_cpm_data_sort<-as.data.frame(Log_cpm_data_sort)
+
+## If mismatch between metadata and expression data, remove columns in expression data not in metadata
+Log_cpm_data <- Log_cpm_data[, c(Lib_IDs_ordered$Lib_id)] # note this changes the order of the dataframe
+str(Log_cpm_data)
+dim(Log_cpm_data) # should now be only 113 samples
+
+## TEMP FIX ## save out rownames to reintroduce after data.table strips them
+gene.names <- rownames(Log_cpm_data)
+
+## Make data.table, then order counts data based on sex
+setDT(Log_cpm_data) # make as a data.table
+setcolorder(Log_cpm_data, as.character(Lib_IDs_ordered$Lib_id)) # fast column reordering of a datatable by reference
+Log_cpm_data[1:3,1:3] # note gene names lost
+
+## Make back to dataframe (# Is this necessary?)
+Log_cpm_data <- as.data.frame(Log_cpm_data)
 
 ## add gene names again
-rownames(Log_cpm_data_sort)<-row.names(Log_cpm_data)
+rownames(Log_cpm_data) <- gene.names
+Log_cpm_data[1:3,1:3]
+
 
 ## Make a vector of colors based on sex
-x<-as.character(Lib_IDs_ordered$sex)
-x[which(x=="M")]<-"steelblue4"
-x[which(x=="F")]<-"orange"
-x[which(x=="M2")]<-"yellow"
+sex.color <- as.character(Lib_IDs_ordered$sex)
+sex.color[which(sex.color=="M")]<-"steelblue4"
+sex.color[which(sex.color=="F")]<-"orange"
+sex.color[which(sex.color=="M2")]<-"yellow"
 
-#######################################################################################
-## Generating heatmap from single modules, both columns and rows clustered by Pearson correlation distances
+
+##### 3. Generate heatmap from single modules, both columns and rows clustered by Pearson correlation distances
 ## Colors from RColorBrewer
-#######################################################################################
+
 hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
 
 ### Pick module to visualize (male or female data, change module color)
@@ -104,7 +129,7 @@ pdf(file="heatmap_male_yellow.pdf")
 heatmap.2(heat_data,Rowv = as.dendrogram(hc_heat_data_row), scale="row", 
           Colv = as.dendrogram(hc_heat_data_col),
           col=hmcol, trace="none", labRow=NA,labCol = NA,
-          ColSideColors=c(x),
+          ColSideColors=c(sex.color),
           margins= c(8,5), srtCol = 70,
           cexCol=0.9, key=TRUE, density.info="density", symkey=FALSE, 
           key.par=list(cex.axis=0.8), key.title=NA, keysize=1)
@@ -130,7 +155,7 @@ heatmap.2(heat_data,Rowv = as.dendrogram(hc_heat_data_row), scale="row",
           Colv = as.dendrogram(hc_heat_data_col),
           RowSideColors=c(rep("darkmagenta", 61), rep("steelblue", 65)),
           col=hmcol, trace="none", labRow=NA,labCol = NA,
-          ColSideColors=c(x),
+          ColSideColors=c(sex.color),
           margins= c(8,5), srtCol = 70,
           cexCol=0.9, key=TRUE, density.info="density", symkey=FALSE, 
           key.par=list(cex.axis=0.8), key.title=NA, keysize=1)
