@@ -19,8 +19,8 @@ library(data.table)
 setwd("~/Documents/10_bernatchez/01_sfon_eqtl/sfon_wgcna/")
 
 # Choose sex to analyze
-sex <- "female"
-#sex <- "male"
+#sex <- "female"
+sex <- "male"
 
 ##### 1. Import all required files: ####
 
@@ -107,25 +107,33 @@ sex.color[which(sex.color=="F")]<-"orange"
 sex.color[which(sex.color=="M2")]<-"yellow"
 
 
-##### 3. Generate heatmap from single modules, both columns and rows clustered by Pearson correlation distances
-## Colors from RColorBrewer
+##### 3. Generate heatmap from single module ####
+# Note: both columns and rows are clustered by Pearson correlation distances
 
-hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
+# Choose module to plot
+module <- "yellow"
+#module <- "ivory"
 
-### Pick module to visualize (male or female data, change module color)
-selected_clust<-row.names(subset(Male_mod, moduleColor=="yellow"))
-## how many genes?
-length(selected_clust)
+## Select module to plot 
+# (male or female data, change module color)
+mod.genes <- row.names(subset(mod.info, moduleColor==module)) # identify genes from the module
+length(mod.genes) # See number of genes in the selected module
 
 ### Subset the selected genes from counts data
-heat_data<- as.matrix(Log_cpm_data_sort[selected_clust,])
+heat_data <- as.matrix(Log_cpm_data[mod.genes,])
 
 ### Distances of genes and samples by Pearson correlation
 hc_heat_data_row <- hclust(as.dist(1-cor(t(heat_data))), method="average") 
 hc_heat_data_col <- hclust(as.dist(1-cor(heat_data)), method="average")
 
+
+## Set colors for scale:
+hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
+
 ### Draw heatmap to pdf
-pdf(file="heatmap_male_yellow.pdf")
+par(mfrow=c(1,1), mar = c(0,4,2,0), cex = 0.6)
+filename <- paste("04_results/", sex,"_", module, "_heatmap_allsamples.pdf", sep = "")
+pdf(file = filename, width = 6, height = 6)
 heatmap.2(heat_data,Rowv = as.dendrogram(hc_heat_data_row), scale="row", 
           Colv = as.dendrogram(hc_heat_data_col),
           col=hmcol, trace="none", labRow=NA,labCol = NA,
@@ -136,21 +144,25 @@ heatmap.2(heat_data,Rowv = as.dendrogram(hc_heat_data_row), scale="row",
 
 dev.off()
 
+##### 4. Generate heatmap for two modules together ####
+# Choose two modules to plot
+multi.clust1 <- "darkmagenta"
+multi.clust2 <- "steelblue"
 
-#######################################################################################################
-## Generating heatmap from two modules, both columns and rows clustered by Pearson correlation distances
-#######################################################################################################
-selected_clust_2<-row.names(rbind(subset(Male_mod, moduleColor=="darkmagenta"), subset(Male_mod, moduleColor=="steelblue")))
+mod.genes.2 <- row.names(rbind(subset(mod.info, moduleColor==multi.clust1), subset(mod.info, moduleColor==multi.clust2)))
+length(mod.genes.2) #how many genes?
 
 ### Subset the selected genes from counts data
-heat_data<- as.matrix(Log_cpm_data_sort[selected_clust_2,])
+heat_data<- as.matrix(Log_cpm_data[mod.genes.2,])
 
 ### Distances of genes and samples by Pearson correlation
 hc_heat_data_row <- hclust(as.dist(1-cor(t(heat_data))), method="average") 
 hc_heat_data_col <- hclust(as.dist(1-cor(heat_data)), method="average")
 
 ### Draw heatmap to pdf
-pdf(file="heatmap_male_darkmagenta_steelblue.pdf")
+par(mfrow=c(1,1), mar = c(0,4,2,0), cex = 0.6)
+filename <- paste("04_results/", sex,"_", multi.clust1, "_", multi.clust2, "_heatmap_allsamples.pdf", sep = "")
+pdf(file=filename, width = 6, height = 6)
 heatmap.2(heat_data,Rowv = as.dendrogram(hc_heat_data_row), scale="row", 
           Colv = as.dendrogram(hc_heat_data_col),
           RowSideColors=c(rep("darkmagenta", 61), rep("steelblue", 65)),
@@ -161,6 +173,3 @@ heatmap.2(heat_data,Rowv = as.dendrogram(hc_heat_data_row), scale="row",
           key.par=list(cex.axis=0.8), key.title=NA, keysize=1)
 
 dev.off()
-
-
-
