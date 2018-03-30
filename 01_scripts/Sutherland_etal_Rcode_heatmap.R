@@ -41,10 +41,6 @@ dim(Log_cpm_data)
 Sampledata <- read.csv(file="00_archive/sfeq_interpretation_v1.csv", header=T)
 head(Sampledata)
 
-# May not be necessary:
-Lib_IDs_reads <- read.csv2(file="00_archive/Sfon_lib_IDs.csv", header=T)
-head(Lib_IDs_reads)
-
 # Reduce size of sample names in columns
 colnames(Log_cpm_data) <- gsub(pattern = "_R1", replacement = ""
     , x =  sub(pattern = ".*lib" , replacement = "lib", x = colnames(Log_cpm_data))
@@ -52,30 +48,16 @@ colnames(Log_cpm_data) <- gsub(pattern = "_R1", replacement = ""
 
 head(colnames(Log_cpm_data))
 
-#REMOVE#
-# ### Edit counts data to use short library IDs
-# Log_cpm_data_sort <- Log_cpm_data
-# str(Log_cpm_data)
-# names(Log_cpm_data_sort)[1:104] <- unlist(strsplit(names(Log_cpm_data_sort)[1:104], "_"), use.names = FALSE)[c(FALSE, TRUE, FALSE)]
-# names(Log_cpm_data_sort)[1:104]<-unlist(strsplit(names(Log_cpm_data_sort)[1:104], ".", fixed=TRUE), use.names = FALSE)[c(FALSE, TRUE)]
-# str(Log_cpm_data_sort)
-#REMOVE#
-
-
 # Combine sample name with info
 Sex_info <- data.frame(Lib_id=Sampledata$lib.ID, sex= Sampledata$sex)
-
-#Lib_IDs_reads<-merge(Lib_IDs_reads, Sex_info, by.x="Lib_ID", by.y="Lib_id", sort=F) # I think this just puts it in the same order
 
 ## Add Arctic Charr males (M2)
 AC_info <- data.frame(Lib_id = names(Log_cpm_data)[105:113], sex = rep("M2", 9)) # Here M2 is to define a diff colour
 Sex_info_all <- rbind(Sex_info, AC_info)
-# Lib_IDs_reads<-rbind(Lib_IDs_reads, data.frame(Lib_ID = names(Log_cpm_data)[105:113], sex = rep("M2", 9)))
 head(Sex_info_all) ; tail(Sex_info_all)
 
 ## Order the file by sex
 Lib_IDs_ordered <- orderBy(~sex, data=Sex_info_all)
-# Lib_IDs_ordered <- orderBy(~sex, data=Lib_IDs_reads)
 head(Lib_IDs_ordered)
 
 
