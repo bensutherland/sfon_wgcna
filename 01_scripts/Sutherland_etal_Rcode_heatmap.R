@@ -31,15 +31,19 @@ mod.info <- read.csv(file= geneInfo.filename, header=T, dec=".", row.names = 1)
 head(mod.info)
 str(mod.info)
 
-### Sex and library information
-Sampledata<-read.csv(file="sfeq_interpretation_v1.csv", header=T)
-Lib_IDs_reads<-read.csv2(file="Sfon_lib_IDs.csv", header=T)
+## Load sex and library information
+Sampledata <- read.csv(file="00_archive/sfeq_interpretation_v1.csv", header=T)
+head(Sampledata)
 
-### Counts data
-Log_cpm_data<-read.csv(file="normalized_output_matrix_log2.csv", header=T, dec=".")
-### Make gene names row names
-row.names(Log_cpm_data)<-Log_cpm_data[,1]
-Log_cpm_data<-Log_cpm_data[,-1]
+Lib_IDs_reads <- read.csv2(file="00_archive/Sfon_lib_IDs.csv", header=T)
+head(Lib_IDs_reads)
+
+## Load counts data
+Log_cpm_data <- read.csv(file = "03_normalized_data/normalized_output_matrix_log2.csv", header=T, dec="."
+                         , row.names = 1)
+Log_cpm_data[1:3, 1:10] # view data
+
+
 
 ### Edit counts data to use short library IDs
 Log_cpm_data_sort<-Log_cpm_data
