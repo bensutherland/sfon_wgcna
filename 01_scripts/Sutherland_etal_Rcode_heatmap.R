@@ -31,23 +31,30 @@ mod.info <- read.csv(file= geneInfo.filename, header=T, dec=".", row.names = 1)
 head(mod.info)
 str(mod.info)
 
-## Load sex and library information
-Sampledata <- read.csv(file="00_archive/sfeq_interpretation_v1.csv", header=T)
-head(Sampledata)
-
-Lib_IDs_reads <- read.csv2(file="00_archive/Sfon_lib_IDs.csv", header=T)
-head(Lib_IDs_reads)
-
-## Load counts data
+## Import counts data
 Log_cpm_data <- read.csv(file = "03_normalized_data/normalized_output_matrix_log2.csv", header=T, dec="."
                          , row.names = 1)
 Log_cpm_data[1:3, 1:10] # view data
 
+## Import sample metadata
+Sampledata <- read.csv(file="00_archive/sfeq_interpretation_v1.csv", header=T)
+head(Sampledata)
 
+# May not be necessary:
+Lib_IDs_reads <- read.csv2(file="00_archive/Sfon_lib_IDs.csv", header=T)
+head(Lib_IDs_reads)
+
+# Reduce size of sample names in columns
+colnames(Log_cpm_data) <- gsub(pattern = "_R1", replacement = ""
+    , x =  sub(pattern = ".*lib" , replacement = "lib", x = colnames(Log_cpm_data))
+  )
+
+head(colnames(Log_cpm_data))
 
 ### Edit counts data to use short library IDs
-Log_cpm_data_sort<-Log_cpm_data
-names(Log_cpm_data_sort)[1:104]<-unlist(strsplit(names(Log_cpm_data_sort)[1:104], "_"), use.names = FALSE)[c(FALSE, TRUE, FALSE)]
+Log_cpm_data_sort <- Log_cpm_data
+str(Log_cpm_data)
+names(Log_cpm_data_sort)[1:104] <- unlist(strsplit(names(Log_cpm_data_sort)[1:104], "_"), use.names = FALSE)[c(FALSE, TRUE, FALSE)]
 names(Log_cpm_data_sort)[1:104]<-unlist(strsplit(names(Log_cpm_data_sort)[1:104], ".", fixed=TRUE), use.names = FALSE)[c(FALSE, TRUE)]
 str(Log_cpm_data_sort)
 
