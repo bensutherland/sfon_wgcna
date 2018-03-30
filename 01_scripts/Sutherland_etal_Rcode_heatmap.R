@@ -41,6 +41,8 @@ dim(Log_cpm_data)
 Sampledata <- read.csv(file="00_archive/sfeq_interpretation_v1.csv", header=T)
 head(Sampledata)
 
+#### 2 Prepare expression data for heatmap ####
+
 # Reduce size of sample names in columns
 colnames(Log_cpm_data) <- gsub(pattern = "_R1", replacement = ""
     , x =  sub(pattern = ".*lib" , replacement = "lib", x = colnames(Log_cpm_data))
@@ -66,7 +68,7 @@ Log_cpm_data <- Log_cpm_data[, c(Lib_IDs_ordered$Lib_id)] # note this changes th
 str(Log_cpm_data)
 dim(Log_cpm_data) # should now be only 113 samples
 
-## TEMP FIX ## save out rownames to reintroduce after data.table strips them
+## Save out rownames to reintroduce after data.table strips them
 gene.names <- rownames(Log_cpm_data)
 
 ## Make data.table, then order counts data based on sex
@@ -80,7 +82,6 @@ Log_cpm_data <- as.data.frame(Log_cpm_data)
 ## add gene names again
 rownames(Log_cpm_data) <- gene.names
 Log_cpm_data[1:3,1:3]
-
 
 ## Make a vector of colors based on sex
 sex.color <- as.character(Lib_IDs_ordered$sex)
