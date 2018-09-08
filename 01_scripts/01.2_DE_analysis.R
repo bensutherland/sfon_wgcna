@@ -74,7 +74,7 @@ result <- topTags(lrt, n = 1000000)
 str(result)
 sum(result$table$FDR < 0.05) # very similar to that approach below, slightly diff b/c glmLRT?
 # in any case, this one can then be exported and used as DE analysis
-
+write.csv2(result, file="04_results/transcriptome_DE_results.csv")
 
 # OTHER APPROACH
 # from https://gist.github.com/jdblischak/11384914

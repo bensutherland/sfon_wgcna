@@ -42,3 +42,4 @@ z-*
 *.DS_Store
 .Rproj.user
 *.swp
+*.txt
