@@ -74,15 +74,70 @@ design <- model.matrix(~my.counts$samples$group)
 colnames(design)[2] <- "sex"
 fit <- glmFit(y = my.counts, design = design)
 # cont.matrix <- makeContrasts(sex, levels=design) # intercept is female
-?contrasts.fit
+# ?contrasts.fit
 lrt <- glmLRT(fit)
 topTags(lrt, n=50)
 
-result <- topTags(lrt, n = 1000000)
-str(result)
+result <- topTags(lrt, n = 1000000) # extract information from the glmLRT
 sum(result$table$FDR < 0.05) # very similar to that approach below, slightly diff b/c glmLRT?
-# in any case, this one can then be exported and used as DE analysis
-write.table(result, file="04_results/transcriptome_DE_results.txt", sep = "\t")
+sum(result$table$FDR < 0.05 & abs(result$table$logFC) > log2(1.5))
+
+# Export
+result.output <- result$table # put into easily exported result
+dim(result.output)
+result.output$transcript <- rownames(result.output)
+head(result.output)
+result.output <- result.output[,c("transcript", "logFC", "logCPM", "LR", "PValue", "FDR")]
+head(result.output)
+
+# Limit by FC and FDR
+result.output.filt <- result.output[abs(result.output$logFC) > log2(1.5) & result.output$FDR < 0.05 ,]
+dim(result.output.filt)
+
+# Export the results
+write.csv(x = result.output.filt, file = "04_results/transcriptome_DE_results_0.05_fc1.5.csv", quote = F, row.names = F)
+
+
+#### Annotation ####
+annot <- read.table(file = "02_input_data/sfontinalis_contigs_annotation_report_v1.0_shortform.txt"
+                    , sep = "\t", header = T)
+
+head(annot)
+head(result.output) # all transcript analyzed
+background.annot <- merge(x = result.output, y = annot, by.x = "transcript", by.y = "transcript_id")
+head(background.annot)
+
+filt.annot <- merge(x = result.output.filt, y = annot, by.x = "transcript", by.y = "transcript_id")
+head(filt.annot)
+
+
+#### Result Exploration ####
+high.fc.thresh.log2 <- log2(4)
+head(filt.annot)
+moderate.female.bias <- filt.annot[filt.annot$logFC < 0 & filt.annot$logFC > -c(high.fc.thresh.log2),]
+high.female.bias <- filt.annot[filt.annot$logFC < -c(high.fc.thresh.log2),]
+moderate.male.bias <- filt.annot[filt.annot$logFC > 0 & filt.annot$logFC < c(high.fc.thresh.log2),]
+high.male.bias <- filt.annot[filt.annot$logFC > c(high.fc.thresh.log2),]
+
+head(high.female.bias)
+
+datasets <- c("moderate.male.bias", "high.male.bias", "moderate.female.bias", "high.female.bias")
+
+# how many genes in each?
+for(i in 1:length(datasets)){
+  print(datasets[i])
+  print(paste("number transcripts = ", nrow(get(datasets[i]))
+              )
+        )
+}
+
+
+# It looks like the format is 1 / 0, where positive log2 FC is 1 biased (male biased) 
+
+#### Plot single transcripts
+# for example:
+TOI <- "QSF_ABCC5.1.1"
+boxplot(my.counts$counts[TOI,] ~ my.counts$samples$group)
 
 # OTHER APPROACH
 # from https://gist.github.com/jdblischak/11384914
