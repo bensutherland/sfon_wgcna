@@ -126,11 +126,17 @@ datasets <- c("moderate.male.bias", "high.male.bias", "moderate.female.bias", "h
 # how many genes in each?
 for(i in 1:length(datasets)){
   print(datasets[i])
-  print(paste("number transcripts = ", nrow(get(datasets[i]))
-              )
-        )
+  print(paste("number transcripts = ", nrow(get(datasets[i]))))
+  
+  # export result
+  filename <- paste0("04_results/", datasets[i], "_DEGs.txt")
+  write.csv(x = get(datasets[i]), file = filename, quote = F, row.names = F)
+  
+  # Give reports
+  print(paste("median logCPM = ", median(get(datasets[i])$logCPM)))
 }
 
+# Need to now figure out if the low expression is leading to a problem in CPM
 
 # It looks like the format is 1 / 0, where positive log2 FC is 1 biased (male biased) 
 
