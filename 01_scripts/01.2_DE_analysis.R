@@ -134,7 +134,14 @@ for(i in 1:length(datasets)){
   
   # Give reports
   print(paste("median logCPM = ", median(get(datasets[i])$logCPM)))
+  print(paste("mean logCPM = ", mean(get(datasets[i])$logCPM)))
 }
+
+
+# What about the general data
+dim(result.output)
+median(result.output$logCPM)
+mean(result.output$logCPM)
 
 # Need to now figure out if the low expression is leading to a problem in CPM
 
