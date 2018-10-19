@@ -123,7 +123,7 @@ heatmap.2(heat_data,Rowv = as.dendrogram(hc_heat_data_row), scale="row",
           ColSideColors=c(sex.color),
           margins= c(8,5), srtCol = 70,
           cexCol=0.9, key=TRUE, density.info="density", symkey=FALSE, 
-          key.par=list(cex.axis=0.8), key.title=NA, keysize=1)
+          key.par=list(cex.axis=0.8), key.title=NA, keysize=1.2)
 
 dev.off()
 
@@ -153,6 +153,15 @@ heatmap.2(heat_data,Rowv = as.dendrogram(hc_heat_data_row), scale="row",
           ColSideColors=c(sex.color),
           margins= c(8,5), srtCol = 70,
           cexCol=0.9, key=TRUE, density.info="density", symkey=FALSE, 
-          key.par=list(cex.axis=0.8), key.title=NA, keysize=1)
+          key.par=list(cex.axis=0.8), key.title=NA, keysize=1.2)
 
+dev.off()
+
+### Draw legend to pdf
+pdf(file="Fig5_legend.pdf")
+plot.new()
+	par(lend="square")
+    legend("top", legend = c("Brook Charr Female", "Brook Charr Male",
+    "Acrtic Charr Male"), col = c("orange", "steelblue4", "yellow"), lty= 1,
+    lwd = 10, cex=0.7, bty="n", horiz=T)
 dev.off()
