@@ -158,10 +158,10 @@ heatmap.2(heat_data,Rowv = as.dendrogram(hc_heat_data_row), scale="row",
 dev.off()
 
 ### Draw legend to pdf
-pdf(file="Fig5_legend.pdf")
+pdf(file="Fig5_legend.pdf", width=6, height=3)
 plot.new()
-	par(lend="square")
+	par(lend="square", mar = c(0,4,2,0))
     legend("top", legend = c("Brook Charr Female", "Brook Charr Male",
     "Acrtic Charr Male"), col = c("orange", "steelblue4", "yellow"), lty= 1,
-    lwd = 10, cex=0.7, bty="n", horiz=T)
+    lwd = 10, cex=0.8, bty="n", horiz=T)
 dev.off()
