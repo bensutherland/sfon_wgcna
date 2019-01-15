@@ -1,13 +1,14 @@
 # **WGCNA Analysis for Brook Charr** #
-WGCNA analysis of transcriptome data for Sutherland et al. 2018 (in prep).   
+WGCNA analysis of transcriptome data for the manuscript Sex-specific co-expression networks and sex-biased gene expression in the salmonid Brook Charr Salvelinus fontinalis (https://doi.org/10.1101/305680).   
 This pipeline has only been tested and used for the purposes of the authors of the above article, and has no guarantees of usefulness whatsoever for other purposes.   
+Section B below, which focus on module-chromosome analysis, was used briefly in the above article for analysis of the sex chromosome only.     
 
 *Required inputs to the repo include:*   
 1) a counts file with linear values that are output from the following repo:  
-https://github.com/bensutherland/SE-reads_assemble-to-counts.git    
-specifically using `01_script/03_express.sh` and then `01_scripts/utility_scripts/prepare_gxlevels_matrix.R`.   
-Essentially, this uses the 'effective counts' column as suggested by eXpress (#cite).
-This should be entitled/located as follows: `02_input_data/out.matrix.csv`
+https://github.com/bensutherland/Simple_reads_to_counts    
+specifically, within this other repo using `01_script/03_express.sh` and then `01_scripts/utility_scripts/prepare_gxlevels_matrix.R`.   
+Essentially, using the 'effective counts' column as suggested by eXpress (Roberts and Pachter 2013).     
+Put this output into the present repo as: `02_input_data/out.matrix.csv`    
 
 2) an interpretation file that contains the filenames for each sample and the associated phenotypic data. 
 This should be entitled/located as follows: `00_archive/sfeq_interpretation_v1.csv`   
