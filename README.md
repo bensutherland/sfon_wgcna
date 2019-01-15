@@ -1,5 +1,5 @@
 # **WGCNA Analysis for Brook Charr** #
-WGCNA analysis of transcriptome data for the manuscript Sex-specific co-expression networks and sex-biased gene expression in the salmonid Brook Charr Salvelinus fontinalis (https://doi.org/10.1101/305680).   
+WGCNA analysis of transcriptome data for the manuscript 'Sex-specific co-expression networks and sex-biased gene expression in the salmonid Brook Charr _Salvelinus fontinalis_' (https://doi.org/10.1101/305680).   
 This pipeline has only been tested and used for the purposes of the authors of the above article, and has no guarantees of usefulness whatsoever for other purposes.   
 Section B below, which focus on module-chromosome analysis, was used briefly in the above article for analysis of the sex chromosome only.     
 
